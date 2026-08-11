@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages Functions - Verify X Cookie Credentials & Save to D1 for Cron Engine
- * 包含万能多重 User ID 解密器与绝对落库保障
+ * 包含万能多重 User ID 解密器与绝对精准字段绑定落库保障
  */
 function getD1(env) {
   return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
@@ -74,6 +74,8 @@ export async function onRequestPost({ request, env }) {
       }
     } catch (e) {}
 
+    const targetUserId = user_id || '1701615602862092288';
+
     // 将验证成功的 Cookie 凭据与 user_id 安全保存至 D1 数据库中
     const db = getD1(env);
     let db_saved = false;
@@ -89,17 +91,26 @@ export async function onRequestPost({ request, env }) {
             updated_at TEXT
           )
         `).run();
+
         try {
           await db.prepare(`ALTER TABLE admin_credentials ADD COLUMN user_id TEXT`).run();
         } catch (e) {}
 
+        // 显式位置绑定，绝对防止 null 与错位
         await db.prepare(`
-          INSERT OR REPLACE INTO admin_credentials (id, ct0, auth_token, user_id, updated_at)
+          INSERT INTO admin_credentials (id, ct0, auth_token, user_id, updated_at)
           VALUES (1, ?, ?, ?, ?)
-        `).bind(cleanCt0, cleanAuth, user_id || '1701615602862092288', new Date().toISOString()).run();
+          ON CONFLICT(id) DO UPDATE SET
+            ct0 = excluded.ct0,
+            auth_token = excluded.auth_token,
+            user_id = excluded.user_id,
+            updated_at = excluded.updated_at
+        `).bind(cleanCt0, cleanAuth, targetUserId, new Date().toISOString()).run();
 
         db_saved = true;
-      } catch (e) {}
+      } catch (e) {
+        console.error('D1 admin_credentials 写入异常:', e.message);
+      }
     }
 
     return Response.json({
@@ -110,10 +121,10 @@ export async function onRequestPost({ request, env }) {
         screen_name,
         avatar_url,
         following_count,
-        user_id
+        user_id: targetUserId
       },
       db_saved,
-      saved_user_id: user_id || '1701615602862092288'
+      saved_user_id: targetUserId
     });
   } catch (err) {
     return Response.json({ success: false, error: err.message }, { status: 500 });

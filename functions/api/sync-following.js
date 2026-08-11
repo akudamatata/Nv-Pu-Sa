@@ -87,8 +87,13 @@ export async function onRequestPost({ request, env }) {
         } catch (e) {}
 
         await db.prepare(`
-          INSERT OR REPLACE INTO admin_credentials (id, ct0, auth_token, user_id, updated_at)
+          INSERT INTO admin_credentials (id, ct0, auth_token, user_id, updated_at)
           VALUES (1, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            ct0 = excluded.ct0,
+            auth_token = excluded.auth_token,
+            user_id = excluded.user_id,
+            updated_at = excluded.updated_at
         `).bind(cleanCt0, cleanAuth, userId, new Date().toISOString()).run();
       } catch (e) {}
     }
