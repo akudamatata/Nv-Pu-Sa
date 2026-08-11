@@ -1,12 +1,15 @@
 /**
  * Cloudflare Pages Functions - Admin Login & D1 Session Persistence
  */
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
   try {
-    const { username, password } = await request.json();
+    const { request, env } = context;
+    const body = await request.json();
+    const username = (body.username || '').trim();
+    const password = (body.password || '').trim();
 
-    const validUser = env.ADMIN_USER || 'admin';
-    const validPass = env.ADMIN_PASS || 'admin123';
+    const validUser = String(env.ADMIN_USER || 'admin').trim();
+    const validPass = String(env.ADMIN_PASS || 'admin123').trim();
 
     if (username === validUser && password === validPass) {
       const token = crypto.randomUUID();
@@ -14,10 +17,12 @@ export async function onRequestPost({ request, env }) {
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
       if (env.DB) {
-        await env.DB.prepare(`
-          INSERT INTO admin_sessions (token, username, expires_at)
-          VALUES (?, ?, ?)
-        `).bind(token, username, expiresAt).run();
+        try {
+          await env.DB.prepare(`
+            INSERT INTO admin_sessions (token, username, expires_at)
+            VALUES (?, ?, ?)
+          `).bind(token, username, expiresAt).run();
+        } catch (e) {}
       }
 
       return Response.json({ success: true, token });
