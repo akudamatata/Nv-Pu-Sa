@@ -1,2 +1,7 @@
 name = "nv-pu-sa"
 pages_build_output_dir = "./public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nv_pu_sa_db"
+database_id = "2fb1a3c6-6b1d-4a10-97cf-06debad3744f"
