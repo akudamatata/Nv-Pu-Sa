@@ -10,24 +10,24 @@
 }
 
 :root {
-  /* Rich Deep Zinc/Obsidian Surface Palette */
-  --bg-dark: #09090b;
-  --bg-surface: rgba(18, 18, 22, 0.82);
-  --bg-surface-hover: rgba(28, 28, 35, 0.95);
-  --bg-panel: #111115;
-  --bg-card-inner: #16161c;
+  /* Rich Deep Blue Obsidian Surface Palette */
+  --bg-dark: #070a12;
+  --bg-surface: rgba(14, 21, 38, 0.78);
+  --bg-surface-hover: rgba(22, 33, 58, 0.92);
+  --bg-panel: #0b1120;
+  --bg-card-inner: #10172a;
 
-  /* Primary Accent: Emerald Green & Mint Glow */
-  --accent-blue: #10b981;
-  --accent-blue-deep: #059669;
-  --accent-blue-glow: rgba(16, 185, 129, 0.18);
-  --accent-sapphire: #34d399;
-  --accent-sapphire-glow: rgba(52, 211, 153, 0.22);
+  /* Primary Accent: Electric Cyan & Sapphire Blue */
+  --accent-blue: #38bdf8;
+  --accent-blue-deep: #0284c7;
+  --accent-blue-glow: rgba(56, 189, 248, 0.16);
+  --accent-sapphire: #2563eb;
+  --accent-sapphire-glow: rgba(37, 99, 235, 0.2);
 
   /* Borders & Dividers */
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
-  --border-blue-glow: rgba(16, 185, 129, 0.45);
+  --border-blue-glow: rgba(56, 189, 248, 0.45);
 
   /* Typography */
   --font-display: 'Plus Jakarta Sans', -apple-system, sans-serif;
@@ -35,9 +35,9 @@
   --font-mono: 'JetBrains Mono', monospace;
 
   /* Text Ramps */
-  --text-main: #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
+  --text-main: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
 
   /* Radius Tokens */
   --radius-sm: 8px;
@@ -46,8 +46,8 @@
   --radius-xl: 28px;
 
   /* Refractive Shadows */
-  --shadow-card: 0 14px 40px -12px rgba(0, 0, 0, 0.85);
-  --shadow-blue-glow: 0 18px 45px -15px rgba(16, 185, 129, 0.3);
+  --shadow-card: 0 14px 40px -12px rgba(0, 0, 0, 0.7);
+  --shadow-blue-glow: 0 18px 45px -15px rgba(56, 189, 248, 0.28);
 }
 
 body {
@@ -60,7 +60,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Ambient Animated Emerald Orbs & Grid Mesh */
+/* Ambient Animated Blue Orbs & Grid Mesh */
 .bg-lights-wrapper {
   position: fixed;
   inset: 0;
@@ -73,7 +73,7 @@ body {
   position: absolute;
   border-radius: 50%;
   filter: blur(120px);
-  opacity: 0.25;
+  opacity: 0.3;
 }
 
 .orb-primary {
@@ -81,7 +81,7 @@ body {
   left: 25%;
   width: 800px;
   height: 550px;
-  background: radial-gradient(circle, #059669 0%, transparent 70%);
+  background: radial-gradient(circle, #0284c7 0%, transparent 70%);
 }
 
 .orb-secondary {
@@ -89,13 +89,13 @@ body {
   right: 10%;
   width: 550px;
   height: 450px;
-  background: radial-gradient(circle, #10b981 0%, transparent 70%);
+  background: radial-gradient(circle, #2563eb 0%, transparent 70%);
 }
 
 .bg-grid-mesh {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(16, 185, 129, 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px);
   background-size: 36px 36px;
 }
 
@@ -146,8 +146,8 @@ body {
   height: 36px;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
