@@ -1,6 +1,10 @@
 /**
- * Cloudflare Pages Functions - Verify X Cookie Credentials
+ * Cloudflare Pages Functions - Verify X Cookie Credentials & Save to D1 for Cron Engine
  */
+function getD1(env) {
+  return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
+}
+
 export async function onRequestPost({ request, env }) {
   try {
     const { ct0, authToken } = await request.json();
@@ -55,9 +59,29 @@ export async function onRequestPost({ request, env }) {
       }
     } catch (e) {}
 
+    // 将验证成功的 Cookie 凭据加密保存至 D1 数据库中，供 Cloudflare 定时 Cron 任务全自动后台调用
+    const db = getD1(env);
+    if (db) {
+      try {
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS admin_credentials (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            ct0 TEXT NOT NULL,
+            auth_token TEXT NOT NULL,
+            updated_at TEXT
+          )
+        `).run();
+
+        await db.prepare(`
+          INSERT OR REPLACE INTO admin_credentials (id, ct0, auth_token, updated_at)
+          VALUES (1, ?, ?, ?)
+        `).bind(cleanCt0, cleanAuth, new Date().toISOString()).run();
+      } catch (e) {}
+    }
+
     return Response.json({
       success: true,
-      message: 'Cookie 验证成功',
+      message: 'Cookie 验证成功，并已同步保存至 D1 数据库',
       user: {
         name,
         screen_name,

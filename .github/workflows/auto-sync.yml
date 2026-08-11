@@ -1,0 +1,16 @@
+name: 🌸 Nv-Pu-Sa Automated Daily Sync Engine
+
+on:
+  schedule:
+    # 每天 UTC 03:00 (北京时间 11:00) 自动触发云端静默同步
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  cron-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Cloudflare Pages Automated Cron Sync Endpoint
+        run: |
+          echo "🚀 Triggering Nv-Pu-Sa Cloudflare Pages Cron Sync Endpoint..."
+          curl -sS -X GET "https://nv-pu-sa.pages.dev/api/cron-sync" | jq .
