@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages Functions - Automated Cron Trigger Sync Endpoint
- * 纯静默自动触发入口（自动创表防护 + 从 D1 读取保存的 Cookie 凭据与 user_id）
+ * 纯静默自动触发入口（自动创表与平滑列升级防护 + 从 D1 读取保存的 Cookie 凭据与 user_id）
  */
 function getD1(env) {
   return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
@@ -13,28 +13,31 @@ export async function onRequestGet({ env }) {
       return Response.json({ success: false, error: 'D1 数据库未绑定' }, { status: 400 });
     }
 
-    // 自动建表保护
-    await db.prepare(`
-      CREATE TABLE IF NOT EXISTS admin_credentials (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
-        ct0 TEXT NOT NULL,
-        auth_token TEXT NOT NULL,
-        user_id TEXT,
-        updated_at TEXT
-      )
-    `).run();
+    // 自动建表与平滑列升级保护
+    try {
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS admin_credentials (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          ct0 TEXT NOT NULL,
+          auth_token TEXT NOT NULL,
+          user_id TEXT,
+          updated_at TEXT
+        )
+      `).run();
+      await db.prepare(`ALTER TABLE admin_credentials ADD COLUMN user_id TEXT`).run();
+    } catch (e) {}
 
     // 自动从 D1 读取上次凭据与预先解密好的 user_id
     const cred = await db.prepare(`
-      SELECT ct0, auth_token, user_id FROM admin_credentials WHERE id = 1
+      SELECT * FROM admin_credentials WHERE id = 1
     `).first();
 
     if (!cred || !cred.ct0 || !cred.auth_token) {
       return Response.json({ success: false, error: '尚未在后台配置并保存 X Cookie 凭据。请先登录 /admin 页面点击一次“一键同步全量关注”。' }, { status: 400 });
     }
 
-    const cleanCt0 = cred.ct0.trim();
-    const cleanAuth = cred.auth_token.trim();
+    const cleanCt0 = String(cred.ct0).trim();
+    const cleanAuth = String(cred.auth_token).trim();
 
     const apiHeaders = {
       'cookie': `auth_token=${cleanAuth}; ct0=${cleanCt0};`,
@@ -48,7 +51,7 @@ export async function onRequestGet({ env }) {
       'referer': 'https://x.com/'
     };
 
-    let userId = cred.user_id || '';
+    let userId = cred.user_id ? String(cred.user_id).trim() : '';
 
     // 若未预存 user_id，尝试动态在线提取
     if (!userId) {

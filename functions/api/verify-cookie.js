@@ -74,7 +74,10 @@ export async function onRequestPost({ request, env }) {
             updated_at TEXT
           )
         `).run();
+        await db.prepare(`ALTER TABLE admin_credentials ADD COLUMN user_id TEXT`).run();
+      } catch (e) {}
 
+      try {
         await db.prepare(`
           INSERT OR REPLACE INTO admin_credentials (id, ct0, auth_token, user_id, updated_at)
           VALUES (1, ?, ?, ?, ?)
