@@ -11,6 +11,14 @@ export async function onRequestPost({ request, env }) {
     const cleanCt0 = ct0.trim();
     const cleanAuth = authToken.trim();
 
+    const pageHeaders = {
+      'cookie': `auth_token=${cleanAuth}; ct0=${cleanCt0};`,
+      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      'referer': 'https://x.com/'
+    };
+
     const apiHeaders = {
       'cookie': `auth_token=${cleanAuth}; ct0=${cleanCt0};`,
       'x-csrf-token': cleanCt0,
@@ -23,7 +31,53 @@ export async function onRequestPost({ request, env }) {
       'referer': 'https://x.com/'
     };
 
+    // 1. 获取登录主体的 rest_id
+    let userId = '';
+    const mainRes = await fetch('https://x.com', { headers: pageHeaders, signal: AbortSignal.timeout(10000) });
+    if (mainRes.ok) {
+      const html = await mainRes.text();
+      const restIdMatch = html.match(/"rest_id":"(.*?)"/);
+      if (restIdMatch && restIdMatch[1]) {
+        userId = restIdMatch[1];
+      }
+    }
+
+    if (!userId) {
+      return Response.json({ success: false, error: '无法从 Cookie 解析用户 rest_id，可能 Cookie 已过期' }, { status: 401 });
+    }
+
     const queryId = 'qGZZDF3mp91q7X22s3HxpA';
+    const features = {
+      "rweb_video_screen_enabled": true,
+      "rweb_cashtags_enabled": true,
+      "profile_label_improvements_pcf_label_in_post_enabled": true,
+      "responsive_web_profile_redirect_enabled": true,
+      "rweb_tipjar_consumption_enabled": true,
+      "verified_phone_label_enabled": false,
+      "creator_subscriptions_tweet_preview_api_enabled": true,
+      "responsive_web_graphql_timeline_navigation_enabled": true,
+      "premium_content_api_read_enabled": false,
+      "communities_web_enable_tweet_community_results_fetch": true,
+      "c9s_tweet_anatomy_moderator_badge_enabled": true,
+      "responsive_web_graphql_exclude_directive_enabled": true,
+      "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
+      "tweetypie_unmention_optimization_enabled": true,
+      "responsive_web_edit_tweet_api_enabled": true,
+      "graphql_is_translatable_rweb_tweet_is_translatable_enabled": true,
+      "view_counts_everywhere_api_enabled": true,
+      "longform_notetweets_consumption_enabled": true,
+      "responsive_web_twitter_article_tweet_consumption_enabled": true,
+      "tweet_awards_web_tipping_enabled": false,
+      "freedom_of_speech_not_reach_fetch_enabled": true,
+      "standardized_nudges_misinfo": true,
+      "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
+      "rweb_video_timestamps_enabled": true,
+      "longform_notetweets_rich_text_read_enabled": true,
+      "longform_notetweets_inline_media_enabled": true,
+      "responsive_web_media_download_video_enabled": false,
+      "responsive_web_enhance_cards_enabled": false
+    };
+
     const fetchedUsers = [];
     let cursor = null;
     let hasMore = true;
@@ -31,12 +85,20 @@ export async function onRequestPost({ request, env }) {
     // 分页拉取关注列表
     while (hasMore && fetchedUsers.length < 200) {
       const variables = {
-        count: 20,
-        includePromotedContent: false,
-        cursor: cursor
+        userId: userId,
+        count: 50,
+        includePromotedContent: false
       };
+      if (cursor) {
+        variables.cursor = cursor;
+      }
 
-      const url = `https://x.com/i/api/graphql/${queryId}/Following?variables=${encodeURIComponent(JSON.stringify(variables))}`;
+      const params = new URLSearchParams({
+        variables: JSON.stringify(variables),
+        features: JSON.stringify(features)
+      });
+
+      const url = `https://x.com/i/api/graphql/${queryId}/Following?${params.toString()}`;
       
       const res = await fetch(url, { headers: apiHeaders, signal: AbortSignal.timeout(12000) });
       if (!res.ok) {
@@ -98,7 +160,7 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
-    // 保存存入 Cloudflare D1 数据库
+    // 存入 Cloudflare D1 数据库
     if (env.DB && fetchedUsers.length > 0) {
       const stmt = env.DB.prepare(`
         INSERT OR REPLACE INTO bloggers (
