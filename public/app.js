@@ -250,12 +250,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <!-- Action Footer -->
         <div class="card-action-footer">
-          <div class="footer-lock-tag">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-            <span>Verified Vault</span>
-          </div>
           <a class="btn-visit-profile" href="https://x.com/${user.screen_name}" target="_blank">
-            <span>Visit Profile</span>
+            <span>访问 X 主页</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
           </a>
         </div>
