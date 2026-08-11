@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderXCookieAccountBox(user);
 
-    alert(`🎉 登录成功！已成功识别到当前 X 账号：@${user.screen_name} (${user.name})`);
+    alert(`🎉 登录成功！已成功识别当前 X 账号：@${user.screen_name} (${user.name})\n✨ 最新 Cookie 凭据与账号 ID 已自动加密保存至 D1 数据库，GitHub 每日定时任务静默备份已激活！`);
   });
 
   btnClearCred?.addEventListener('click', () => {
