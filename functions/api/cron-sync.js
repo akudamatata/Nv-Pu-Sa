@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages Functions - Automated Cron Trigger Sync Endpoint
- * 纯静默自动触发入口（自动从 D1 读取保存的 Cookie 凭据）
+ * 纯静默自动触发入口（自动创表防护 + 从 D1 读取保存的 Cookie 凭据）
  */
 function getD1(env) {
   return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
@@ -13,13 +13,23 @@ export async function onRequestGet({ env }) {
       return Response.json({ success: false, error: 'D1 数据库未绑定' }, { status: 400 });
     }
 
+    // 自动建表保护
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS admin_credentials (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        ct0 TEXT NOT NULL,
+        auth_token TEXT NOT NULL,
+        updated_at TEXT
+      )
+    `).run();
+
     // 自动从 D1 读取上次凭据
     const cred = await db.prepare(`
       SELECT ct0, auth_token FROM admin_credentials WHERE id = 1
     `).first();
 
     if (!cred || !cred.ct0 || !cred.auth_token) {
-      return Response.json({ success: false, error: '尚未在后台配置并保存 X Cookie 凭据' }, { status: 400 });
+      return Response.json({ success: false, error: '尚未在后台配置并保存 X Cookie 凭据。请先登录 /admin 页面点击一次“登录 X 账号”。' }, { status: 400 });
     }
 
     const cleanCt0 = cred.ct0.trim();
