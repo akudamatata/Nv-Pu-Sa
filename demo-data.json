@@ -1,0 +1,74 @@
+[
+  {
+    "id": "1280938963541221376",
+    "screen_name": "afukadou7",
+    "name": "阿芙卡豆",
+    "avatar_url": "https://pbs.twimg.com/profile_images/2033912326085349377/WEkPM9t7_400x400.jpg",
+    "cover_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80",
+    "followers_count": 102939,
+    "description": "阿芙卡豆 | 官方指路 💓 TG & Fansone 专属记录页，分享日常与数码生活。",
+    "verified": true,
+    "category": "Design & Lifestyle",
+    "backed_up_at": "2026-08-11T15:21:30.336Z"
+  },
+  {
+    "id": "15354924",
+    "screen_name": "sama",
+    "name": "Sam Altman",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1605336338520281088/8p7c1m-b_400x400.jpg",
+    "cover_url": "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=800&auto=format&fit=crop&q=80",
+    "followers_count": 3240000,
+    "description": "CEO at OpenAI. Working on AGI to benefit all of humanity.",
+    "verified": true,
+    "category": "AI & Tech",
+    "backed_up_at": "2026-08-11T16:00:00.000Z"
+  },
+  {
+    "id": "33838201",
+    "screen_name": "karpathy",
+    "name": "Andrej Karpathy",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1799516629949603840/z0HquzC__400x400.jpg",
+    "cover_url": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&auto=format&fit=crop&q=80",
+    "followers_count": 1120000,
+    "description": "Building Eureka Labs. Formerly OpenAI and Tesla AI lead. Passionate about LLMs, deep learning and education.",
+    "verified": true,
+    "category": "AI Research",
+    "backed_up_at": "2026-08-11T16:05:00.000Z"
+  },
+  {
+    "id": "1157097323",
+    "screen_name": "levelsio",
+    "name": "Pieter Levels",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1783777553942007808/3Z__tM50_400x400.jpg",
+    "cover_url": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80",
+    "followers_count": 542000,
+    "description": "Indie hacker. Building Nomad List, Remote OK, PhotoAI, and Interior AI. Shipping fast as a solo founder.",
+    "verified": true,
+    "category": "Indie Hacker",
+    "backed_up_at": "2026-08-11T16:10:00.000Z"
+  },
+  {
+    "id": "14499829",
+    "screen_name": "ylecun",
+    "name": "Yann LeCun",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1498642738902507523/wU2a74cE_400x400.jpg",
+    "cover_url": "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&auto=format&fit=crop&q=80",
+    "followers_count": 890000,
+    "description": "Chief AI Scientist at Meta. Professor at NYU. Turing Award Laureate for Deep Learning.",
+    "verified": true,
+    "category": "AI Research",
+    "backed_up_at": "2026-08-11T16:15:00.000Z"
+  },
+  {
+    "id": "96135824",
+    "screen_name": "gregkamradt",
+    "name": "Greg Kamradt",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1614761011884392451/7fHlO12T_400x400.jpg",
+    "cover_url": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=800&auto=format&fit=crop&q=80",
+    "followers_count": 185000,
+    "description": "Building AI data tools & benchmarks. Needle in a Haystack evaluation creator. Exploring LLM capabilities.",
+    "verified": false,
+    "category": "AI & Data",
+    "backed_up_at": "2026-08-11T16:20:00.000Z"
+  }
+]

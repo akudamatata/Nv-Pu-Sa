@@ -1,0 +1,12 @@
+name = "x-follow-archive"
+pages_build_output_dir = "./public"
+
+[vars]
+ADMIN_USER = "admin"
+ADMIN_PASS = "admin123"
+
+# Cloudflare D1 数据库绑定
+[[d1_databases]]
+binding = "DB"
+database_name = "x-archive-db"
+database_id = "your-d1-database-id-here"

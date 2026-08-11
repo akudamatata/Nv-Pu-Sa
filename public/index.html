@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nv-Pu-Sa (女菩萨) · X 关注博主墙与永久归档</title>
+  <meta name="description" content="Nv-Pu-Sa (女菩萨) — 个人 X (Twitter) 关注列表自动备份与全量博主墙归档系统">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Background Animated Lights & Grid -->
+  <div class="bg-lights-wrapper">
+    <div class="light-orb orb-primary"></div>
+    <div class="light-orb orb-secondary"></div>
+    <div class="bg-grid-mesh"></div>
+  </div>
+
+  <!-- Top Header Navigation -->
+  <header class="app-nav">
+    <div class="nav-content">
+      <a href="/" class="brand-logo">
+        <div class="logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 11a9 9 0 0 1 9 9"></path>
+            <path d="M4 4a16 16 0 0 1 16 16"></path>
+            <circle cx="5" cy="19" r="1"></circle>
+          </svg>
+        </div>
+        <div class="logo-meta">
+          <span class="logo-name">NV-PU-SA</span>
+          <span class="logo-tag">X ARCHIVE</span>
+        </div>
+      </a>
+
+      <div class="nav-right">
+        <div class="status-indicator">
+          <span class="status-pulse"></span>
+          <span>LIVE ARCHIVE</span>
+        </div>
+        <a href="/admin" class="btn-admin-gate">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>Admin 管理后台</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Showcase Container -->
+  <main class="showcase-shell">
+    
+    <!-- Hero Banner & Stat Bento -->
+    <section class="hero-bento-section">
+      <div class="hero-intro">
+        <div class="hero-eyebrow">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <span>PERSONAL X CURATION VAULT</span>
+        </div>
+        <h1 class="hero-headline">关注博主精选画廊</h1>
+        <p class="hero-subtext">精选 X (Twitter) 高优质博主永久归档 · 实时去重备份与沉浸式探索</p>
+      </div>
+
+      <!-- High Density Stat Bento Cards -->
+      <div class="stat-bento-grid">
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </div>
+          <div class="bento-content">
+            <span class="bento-value" id="stat-total">0</span>
+            <span class="bento-label">归档博主总数</span>
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          </div>
+          <div class="bento-content">
+            <span class="bento-value" id="stat-verified">0%</span>
+            <span class="bento-label">蓝标认证占比</span>
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          </div>
+          <div class="bento-content">
+            <span class="bento-value" id="stat-top">0</span>
+            <span class="bento-label">最高粉丝影响数</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toolbar & Filter Area -->
+    <section class="toolbar-section">
+      <!-- Search Input Shell -->
+      <div class="search-input-shell">
+        <div class="search-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <input type="text" id="search-input" placeholder="搜索博主 ID (@handle)、名称或 Bio 关键词... (按 '/' 聚焦)" autocomplete="off">
+        <kbd class="shortcut-kbd">/</kbd>
+      </div>
+
+      <!-- Filter ControlsBar -->
+      <div class="filter-controls-bar">
+        <!-- Left: Category Pills -->
+        <div class="category-pills">
+          <button id="pill-all" class="cat-pill active">全部博主</button>
+          <button id="pill-verified" class="cat-pill">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <span>蓝标认证</span>
+          </button>
+          <button id="pill-100k" class="cat-pill">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+            <span>10万+ 粉丝</span>
+          </button>
+        </div>
+
+        <!-- Right Group: Pure Custom Dropdown Popover & View Switcher -->
+        <div class="right-tools-group">
+          
+          <!-- Custom Popover Dropdown Container (NO native select) -->
+          <div class="dropdown-popover-wrapper" id="custom-sort-dropdown">
+            <button type="button" class="dropdown-trigger-btn" id="sort-dropdown-trigger">
+              <span id="sort-selected-label">排序: 粉丝数从高到低</span>
+              <svg class="dropdown-arrow-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+            <!-- Floating Menu Panel -->
+            <div class="dropdown-menu-panel hidden" id="sort-dropdown-menu">
+              <div class="dropdown-item active" data-value="followers-desc">
+                <span>排序: 粉丝数从高到低</span>
+                <svg class="item-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <div class="dropdown-item" data-value="followers-asc">
+                <span>排序: 粉丝数从低到高</span>
+                <svg class="item-check-icon hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <div class="dropdown-item" data-value="name-asc">
+                <span>排序: 名称 A - Z</span>
+                <svg class="item-check-icon hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <div class="dropdown-item" data-value="recent">
+                <span>排序: 备份时间最近</span>
+                <svg class="item-check-icon hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="view-switch-btns">
+            <button id="btn-view-grid" class="v-btn active" title="网格平铺墙">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z"/></svg>
+            </button>
+            <button id="btn-view-list" class="v-btn" title="列表模式">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Blogger Cards Wall -->
+    <section class="gallery-wall-section">
+      <div id="blogger-grid" class="blogger-cards-container">
+        <!-- JS 动态渲染博主 Card -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="empty-state-box hidden">
+        <div class="empty-icon-circle">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+        </div>
+        <h3 class="empty-title">归档墙数据为空</h3>
+        <p class="empty-subtext">可以前往 <a href="/admin">Admin 管理后台</a> 一键同步或导入备份数据。</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <p>X-Archive Engine · Powered by Cloudflare Pages & D1 System</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

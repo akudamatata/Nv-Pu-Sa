@@ -1,0 +1,15 @@
+{
+  "name": "nv-pu-sa",
+  "version": "1.0.0",
+  "description": "Nv-Pu-Sa (女菩萨) — X (Twitter) 关注列表自动增量备份与全量博主墙归档系统",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "https-proxy-agent": "^7.0.6"
+  }
+}
