@@ -53,7 +53,7 @@ export async function onRequestPost({ request, env }) {
       const mainRes = await fetch('https://x.com', { headers: pageHeaders, signal: AbortSignal.timeout(10000) });
       if (mainRes.ok) {
         const html = await mainRes.text();
-        const matches = html.match(/"rest_id":"(\d+)"/) || html.match(/\\"/rest_id\\":\\"(\d+)\\"/) || html.match(/"user_id":"(\d+)"/);
+        const matches = html.match(/"rest_id":"(\d+)"/) || html.match(/"user_id":"(\d+)"/);
         if (matches && matches[1]) {
           userId = matches[1];
         }
