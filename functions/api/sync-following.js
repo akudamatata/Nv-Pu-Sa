@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages Functions - Sync Following API (Edge Serverless Engine)
- * 使用 X 官方账号验证接口 100% 提取 id_str (userId)
+ * 全自动兼容 Auto-Table Creation & D1 数据库持久落库
  */
 export async function onRequestPost({ request, env }) {
   try {
@@ -26,7 +26,7 @@ export async function onRequestPost({ request, env }) {
 
     let userId = '';
 
-    // 1. 优先使用 X 官方账号验证 API 提取 id_str (userId)
+    // 1. 优先从官方验证 API 提取 id_str (userId)
     try {
       const uRes = await fetch('https://x.com/i/api/1.1/account/verify_credentials.json', {
         headers: apiHeaders,
@@ -41,7 +41,7 @@ export async function onRequestPost({ request, env }) {
       }
     } catch (e) {}
 
-    // 2. 降级备份：若 API 受到限制，从网页 HTML 中提取
+    // 2. 降级备用：从 HTML 中读取
     if (!userId) {
       const pageHeaders = {
         'cookie': `auth_token=${cleanAuth}; ct0=${cleanCt0};`,
@@ -149,7 +149,7 @@ export async function onRequestPost({ request, env }) {
 
                 if (screen_name) {
                   fetchedUsers.push({
-                    id: resObj.rest_id || screen_name,
+                    id: String(resObj.rest_id || screen_name),
                     screen_name,
                     name,
                     avatar_url,
@@ -178,8 +178,22 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
-    // 存入 Cloudflare D1 数据库
+    // 存入 Cloudflare D1 数据库（全自动创表容错）
     if (env.DB && fetchedUsers.length > 0) {
+      await env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS bloggers (
+          id TEXT PRIMARY KEY,
+          screen_name TEXT UNIQUE NOT NULL,
+          name TEXT NOT NULL,
+          avatar_url TEXT,
+          cover_url TEXT,
+          followers_count INTEGER DEFAULT 0,
+          description TEXT,
+          verified INTEGER DEFAULT 0,
+          backed_up_at TEXT
+        )
+      `).run();
+
       const stmt = env.DB.prepare(`
         INSERT OR REPLACE INTO bloggers (
           id, screen_name, name, avatar_url, cover_url, followers_count, description, verified, backed_up_at

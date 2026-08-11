@@ -1,9 +1,24 @@
 /**
- * Cloudflare Pages Functions - Archive API (D1 Database Backend)
+ * Cloudflare Pages Functions - Archive API (D1 Database Backend & Auto Schema Init)
  */
 export async function onRequestGet({ env }) {
   try {
     if (env.DB) {
+      // 自动建表保护
+      await env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS bloggers (
+          id TEXT PRIMARY KEY,
+          screen_name TEXT UNIQUE NOT NULL,
+          name TEXT NOT NULL,
+          avatar_url TEXT,
+          cover_url TEXT,
+          followers_count INTEGER DEFAULT 0,
+          description TEXT,
+          verified INTEGER DEFAULT 0,
+          backed_up_at TEXT
+        )
+      `).run();
+
       const { results } = await env.DB.prepare(`
         SELECT * FROM bloggers ORDER BY followers_count DESC
       `).all();
@@ -23,7 +38,20 @@ export async function onRequestPost({ request, env }) {
     }
 
     if (env.DB) {
-      // 批量更新存入 D1 数据库
+      await env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS bloggers (
+          id TEXT PRIMARY KEY,
+          screen_name TEXT UNIQUE NOT NULL,
+          name TEXT NOT NULL,
+          avatar_url TEXT,
+          cover_url TEXT,
+          followers_count INTEGER DEFAULT 0,
+          description TEXT,
+          verified INTEGER DEFAULT 0,
+          backed_up_at TEXT
+        )
+      `).run();
+
       const stmt = env.DB.prepare(`
         INSERT OR REPLACE INTO bloggers (
           id, screen_name, name, avatar_url, cover_url, followers_count, description, verified, backed_up_at
