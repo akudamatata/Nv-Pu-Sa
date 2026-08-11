@@ -94,13 +94,33 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/archive');
       const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
         rawBloggerData = json.data;
-        updateBentoStats();
-        applyFilterAndSort();
+      } else {
+        // 双保险 fallback: 优先读取同步备份的本地缓存数据
+        const cached = localStorage.getItem('x_archive_cached_data');
+        if (cached) {
+          try {
+            const list = JSON.parse(cached);
+            if (Array.isArray(list) && list.length > 0) {
+              rawBloggerData = list;
+            }
+          } catch (e) {}
+        }
       }
+
+      updateBentoStats();
+      applyFilterAndSort();
     } catch (err) {
       console.warn('获取归档数据网络错误:', err);
+      const cached = localStorage.getItem('x_archive_cached_data');
+      if (cached) {
+        try {
+          rawBloggerData = JSON.parse(cached);
+          updateBentoStats();
+          applyFilterAndSort();
+        } catch (e) {}
+      }
     }
   }
 

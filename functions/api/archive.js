@@ -1,11 +1,16 @@
 /**
- * Cloudflare Pages Functions - Archive API (D1 Database Backend & Auto Schema Init)
+ * Cloudflare Pages Functions - Archive API (D1 Database Backend & Multi-Binding Compatible)
  */
+function getD1(env) {
+  return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
+}
+
 export async function onRequestGet({ env }) {
   try {
-    if (env.DB) {
-      // 自动建表保护
-      await env.DB.prepare(`
+    const db = getD1(env);
+    if (db) {
+      // 自动创表保护
+      await db.prepare(`
         CREATE TABLE IF NOT EXISTS bloggers (
           id TEXT PRIMARY KEY,
           screen_name TEXT UNIQUE NOT NULL,
@@ -19,12 +24,12 @@ export async function onRequestGet({ env }) {
         )
       `).run();
 
-      const { results } = await env.DB.prepare(`
+      const { results } = await db.prepare(`
         SELECT * FROM bloggers ORDER BY followers_count DESC
       `).all();
-      return Response.json({ success: true, count: results.length, data: results });
+      return Response.json({ success: true, count: results.length, data: results, db_bound: true });
     }
-    return Response.json({ success: true, count: 0, data: [] });
+    return Response.json({ success: true, count: 0, data: [], db_bound: false, note: 'D1 database not bound' });
   } catch (err) {
     return Response.json({ success: false, error: err.message }, { status: 500 });
   }
@@ -37,8 +42,9 @@ export async function onRequestPost({ request, env }) {
       return Response.json({ success: false, error: '数据必须为 JSON 数组' }, { status: 400 });
     }
 
-    if (env.DB) {
-      await env.DB.prepare(`
+    const db = getD1(env);
+    if (db) {
+      await db.prepare(`
         CREATE TABLE IF NOT EXISTS bloggers (
           id TEXT PRIMARY KEY,
           screen_name TEXT UNIQUE NOT NULL,
@@ -52,7 +58,7 @@ export async function onRequestPost({ request, env }) {
         )
       `).run();
 
-      const stmt = env.DB.prepare(`
+      const stmt = db.prepare(`
         INSERT OR REPLACE INTO bloggers (
           id, screen_name, name, avatar_url, cover_url, followers_count, description, verified, backed_up_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -73,7 +79,7 @@ export async function onRequestPost({ request, env }) {
       });
 
       if (batch.length > 0) {
-        await env.DB.batch(batch);
+        await db.batch(batch);
       }
     }
 
@@ -85,8 +91,9 @@ export async function onRequestPost({ request, env }) {
 
 export async function onRequestDelete({ env }) {
   try {
-    if (env.DB) {
-      await env.DB.prepare(`DELETE FROM bloggers`).run();
+    const db = getD1(env);
+    if (db) {
+      await db.prepare(`DELETE FROM bloggers`).run();
     }
     return Response.json({ success: true, message: '数据库已清空' });
   } catch (err) {

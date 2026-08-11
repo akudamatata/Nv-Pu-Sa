@@ -1,7 +1,11 @@
 /**
  * Cloudflare Pages Functions - Sync Following API (Edge Serverless Engine)
- * 全自动兼容 Auto-Table Creation & D1 数据库持久落库
+ * 支持全名称多向兼容 getD1(env) 自动识别 D1 绑定
  */
+function getD1(env) {
+  return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
+}
+
 export async function onRequestPost({ request, env }) {
   try {
     const { ct0, authToken } = await request.json();
@@ -178,49 +182,56 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
-    // 存入 Cloudflare D1 数据库（全自动创表容错）
-    if (env.DB && fetchedUsers.length > 0) {
-      await env.DB.prepare(`
-        CREATE TABLE IF NOT EXISTS bloggers (
-          id TEXT PRIMARY KEY,
-          screen_name TEXT UNIQUE NOT NULL,
-          name TEXT NOT NULL,
-          avatar_url TEXT,
-          cover_url TEXT,
-          followers_count INTEGER DEFAULT 0,
-          description TEXT,
-          verified INTEGER DEFAULT 0,
-          backed_up_at TEXT
-        )
-      `).run();
+    const db = getD1(env);
+    let dbSuccess = false;
 
-      const stmt = env.DB.prepare(`
-        INSERT OR REPLACE INTO bloggers (
-          id, screen_name, name, avatar_url, cover_url, followers_count, description, verified, backed_up_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
+    // 存入 Cloudflare D1 数据库
+    if (db && fetchedUsers.length > 0) {
+      try {
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS bloggers (
+            id TEXT PRIMARY KEY,
+            screen_name TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            avatar_url TEXT,
+            cover_url TEXT,
+            followers_count INTEGER DEFAULT 0,
+            description TEXT,
+            verified INTEGER DEFAULT 0,
+            backed_up_at TEXT
+          )
+        `).run();
 
-      const batch = fetchedUsers.map(item => {
-        return stmt.bind(
-          item.id,
-          item.screen_name,
-          item.name,
-          item.avatar_url,
-          item.cover_url,
-          item.followers_count,
-          item.description,
-          item.verified,
-          item.backed_up_at
-        );
-      });
+        const stmt = db.prepare(`
+          INSERT OR REPLACE INTO bloggers (
+            id, screen_name, name, avatar_url, cover_url, followers_count, description, verified, backed_up_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
 
-      await env.DB.batch(batch);
+        const batch = fetchedUsers.map(item => {
+          return stmt.bind(
+            item.id,
+            item.screen_name,
+            item.name,
+            item.avatar_url,
+            item.cover_url,
+            item.followers_count,
+            item.description,
+            item.verified,
+            item.backed_up_at
+          );
+        });
+
+        await db.batch(batch);
+        dbSuccess = true;
+      } catch (e) {}
     }
 
     return Response.json({
       success: true,
       count: fetchedUsers.length,
       following: fetchedUsers,
+      db_saved: dbSuccess,
       message: `同步成功！已备份 ${fetchedUsers.length} 位关注博主`
     });
 

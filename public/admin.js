@@ -342,11 +342,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (Array.isArray(json.following)) {
+        if (json.following.length > 0) {
+          localStorage.setItem('x_archive_cached_data', JSON.stringify(json.following));
+        }
+
         let log = `> ✅ 智能同步完毕！成功抓取并备份 ${json.count || json.following.length} 位关注博主：\n\n`;
         json.following.forEach(u => {
           log += `> 📌 @${u.screen_name} (${u.name}) | 粉丝数: ${u.followers_count || 0}\n`;
         });
-        log += `\n> ✨ 数据已全量永久备份落库 (D1 Database)！直接返回首页展示墙刷新即可全量查看！`;
+
+        if (json.db_saved === false) {
+          log += `\n> ⚠️ 提示: D1 数据库未绑定或未触发重新部署，已开启本地缓存双保险防护！直接打开首页即可正常全量显示！`;
+        } else {
+          log += `\n> ✨ 数据已全量永久落库 (D1 Database)！直接返回首页展示墙刷新即可全量查看！`;
+        }
+
         terminalLogOutput.textContent = log;
         return;
       }
