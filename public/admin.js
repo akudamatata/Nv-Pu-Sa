@@ -341,6 +341,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      if (Array.isArray(json.following)) {
+        let log = `> ✅ 智能同步完毕！成功抓取并备份 ${json.count || json.following.length} 位关注博主：\n\n`;
+        json.following.forEach(u => {
+          log += `> 📌 @${u.screen_name} (${u.name}) | 粉丝数: ${u.followers_count || 0}\n`;
+        });
+        log += `\n> ✨ 数据已全量永久备份落库 (D1 Database)！直接返回首页展示墙刷新即可全量查看！`;
+        terminalLogOutput.textContent = log;
+        return;
+      }
+
       pollProgress();
     } catch (err) {
       terminalLogOutput.textContent += `> 网络请求失败: ${err.message}\n`;
