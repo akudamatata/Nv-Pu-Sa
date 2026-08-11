@@ -1,12 +1,8 @@
-name = "x-follow-archive"
+name = "nv-pu-sa"
 pages_build_output_dir = "./public"
 
 [vars]
 ADMIN_USER = "admin"
 ADMIN_PASS = "admin123"
 
-# Cloudflare D1 数据库绑定
-[[d1_databases]]
-binding = "DB"
-database_name = "x-archive-db"
-database_id = "your-d1-database-id-here"
+# Cloudflare Pages D1 绑定请在 Pages Dashboard -> Settings -> Functions -> D1 Database Bindings 进行绑定 (Variable name: DB)
