@@ -1,5 +1,6 @@
 /**
  * Cloudflare Pages Functions - Sync Following API (Edge Serverless Engine)
+ * 使用 X 官方账号验证接口 100% 提取 id_str (userId)
  */
 export async function onRequestPost({ request, env }) {
   try {
@@ -10,14 +11,6 @@ export async function onRequestPost({ request, env }) {
 
     const cleanCt0 = ct0.trim();
     const cleanAuth = authToken.trim();
-
-    const pageHeaders = {
-      'cookie': `auth_token=${cleanAuth}; ct0=${cleanCt0};`,
-      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-      'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
-      'referer': 'https://x.com/'
-    };
 
     const apiHeaders = {
       'cookie': `auth_token=${cleanAuth}; ct0=${cleanCt0};`,
@@ -31,19 +24,44 @@ export async function onRequestPost({ request, env }) {
       'referer': 'https://x.com/'
     };
 
-    // 1. 获取登录主体的 rest_id
     let userId = '';
-    const mainRes = await fetch('https://x.com', { headers: pageHeaders, signal: AbortSignal.timeout(10000) });
-    if (mainRes.ok) {
-      const html = await mainRes.text();
-      const restIdMatch = html.match(/"rest_id":"(.*?)"/);
-      if (restIdMatch && restIdMatch[1]) {
-        userId = restIdMatch[1];
+
+    // 1. 优先使用 X 官方账号验证 API 提取 id_str (userId)
+    try {
+      const uRes = await fetch('https://x.com/i/api/1.1/account/verify_credentials.json', {
+        headers: apiHeaders,
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (uRes.ok) {
+        const uData = await uRes.json();
+        if (uData && (uData.id_str || uData.id)) {
+          userId = String(uData.id_str || uData.id);
+        }
+      }
+    } catch (e) {}
+
+    // 2. 降级备份：若 API 受到限制，从网页 HTML 中提取
+    if (!userId) {
+      const pageHeaders = {
+        'cookie': `auth_token=${cleanAuth}; ct0=${cleanCt0};`,
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'referer': 'https://x.com/'
+      };
+
+      const mainRes = await fetch('https://x.com', { headers: pageHeaders, signal: AbortSignal.timeout(10000) });
+      if (mainRes.ok) {
+        const html = await mainRes.text();
+        const matches = html.match(/"rest_id":"(\d+)"/) || html.match(/\\"/rest_id\\":\\"(\d+)\\"/) || html.match(/"user_id":"(\d+)"/);
+        if (matches && matches[1]) {
+          userId = matches[1];
+        }
       }
     }
 
     if (!userId) {
-      return Response.json({ success: false, error: '无法从 Cookie 解析用户 rest_id，可能 Cookie 已过期' }, { status: 401 });
+      return Response.json({ success: false, error: '无法解析当前账号 ID，请检查 Cookie 是否有效并包含 ct0 与 auth_token' }, { status: 401 });
     }
 
     const queryId = 'qGZZDF3mp91q7X22s3HxpA';
