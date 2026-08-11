@@ -35,12 +35,14 @@ export async function onRequestPost({ request, env }) {
     const html = await res.text();
     const screenNameMatch = html.match(/"screen_name":"(.*?)"/);
     const avatarMatch = html.match(/"profile_image_url_https":"(.*?)"/);
+    const restIdMatch = html.match(/"rest_id":"(.*?)"/);
 
     if (!screenNameMatch || !screenNameMatch[1]) {
       return Response.json({ success: false, error: '未能从 X 页面解密到账号信息，可能 Cookie 已过期。' }, { status: 401 });
     }
 
     const screen_name = screenNameMatch[1];
+    const user_id = restIdMatch ? restIdMatch[1] : '';
     let avatar_url = avatarMatch ? avatarMatch[1].replace(/\\/g, '').replace('_normal', '_400x400') : 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
     let name = screen_name;
     let following_count = 0;
@@ -59,7 +61,7 @@ export async function onRequestPost({ request, env }) {
       }
     } catch (e) {}
 
-    // 将验证成功的 Cookie 凭据加密保存至 D1 数据库中，供 Cloudflare 定时 Cron 任务全自动后台调用
+    // 将验证成功的 Cookie 凭据与 user_id 安全保存至 D1 数据库中
     const db = getD1(env);
     if (db) {
       try {
@@ -68,14 +70,15 @@ export async function onRequestPost({ request, env }) {
             id INTEGER PRIMARY KEY CHECK (id = 1),
             ct0 TEXT NOT NULL,
             auth_token TEXT NOT NULL,
+            user_id TEXT,
             updated_at TEXT
           )
         `).run();
 
         await db.prepare(`
-          INSERT OR REPLACE INTO admin_credentials (id, ct0, auth_token, updated_at)
-          VALUES (1, ?, ?, ?)
-        `).bind(cleanCt0, cleanAuth, new Date().toISOString()).run();
+          INSERT OR REPLACE INTO admin_credentials (id, ct0, auth_token, user_id, updated_at)
+          VALUES (1, ?, ?, ?, ?)
+        `).bind(cleanCt0, cleanAuth, user_id, new Date().toISOString()).run();
       } catch (e) {}
     }
 
@@ -86,7 +89,8 @@ export async function onRequestPost({ request, env }) {
         name,
         screen_name,
         avatar_url,
-        following_count
+        following_count,
+        user_id
       }
     });
   } catch (err) {

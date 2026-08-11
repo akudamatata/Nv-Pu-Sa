@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages Functions - Sync Following API (Edge Serverless Engine)
- * 支持全名称多向兼容 getD1(env) 自动识别 D1 绑定
+ * 全自动兼容 Auto-Table Creation & D1 数据库持久落库
  */
 function getD1(env) {
   return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
@@ -66,6 +66,28 @@ export async function onRequestPost({ request, env }) {
 
     if (!userId) {
       return Response.json({ success: false, error: '无法解析当前账号 ID，请检查 Cookie 是否有效并包含 ct0 与 auth_token' }, { status: 401 });
+    }
+
+    const db = getD1(env);
+
+    // 顺便自动保存有效的 Cookie 与 user_id 到 D1 数据表中供定时任务无门槛调用
+    if (db) {
+      try {
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS admin_credentials (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            ct0 TEXT NOT NULL,
+            auth_token TEXT NOT NULL,
+            user_id TEXT,
+            updated_at TEXT
+          )
+        `).run();
+
+        await db.prepare(`
+          INSERT OR REPLACE INTO admin_credentials (id, ct0, auth_token, user_id, updated_at)
+          VALUES (1, ?, ?, ?, ?)
+        `).bind(cleanCt0, cleanAuth, userId, new Date().toISOString()).run();
+      } catch (e) {}
     }
 
     const queryId = 'qGZZDF3mp91q7X22s3HxpA';
@@ -182,7 +204,6 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
-    const db = getD1(env);
     let dbSuccess = false;
 
     // 存入 Cloudflare D1 数据库

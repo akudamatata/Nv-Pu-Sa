@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages Functions - Automated Cron Trigger Sync Endpoint
- * 纯静默自动触发入口（自动创表防护 + 从 D1 读取保存的 Cookie 凭据）
+ * 纯静默自动触发入口（自动创表防护 + 从 D1 读取保存的 Cookie 凭据与 user_id）
  */
 function getD1(env) {
   return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
@@ -19,17 +19,18 @@ export async function onRequestGet({ env }) {
         id INTEGER PRIMARY KEY CHECK (id = 1),
         ct0 TEXT NOT NULL,
         auth_token TEXT NOT NULL,
+        user_id TEXT,
         updated_at TEXT
       )
     `).run();
 
-    // 自动从 D1 读取上次凭据
+    // 自动从 D1 读取上次凭据与预先解密好的 user_id
     const cred = await db.prepare(`
-      SELECT ct0, auth_token FROM admin_credentials WHERE id = 1
+      SELECT ct0, auth_token, user_id FROM admin_credentials WHERE id = 1
     `).first();
 
     if (!cred || !cred.ct0 || !cred.auth_token) {
-      return Response.json({ success: false, error: '尚未在后台配置并保存 X Cookie 凭据。请先登录 /admin 页面点击一次“登录 X 账号”。' }, { status: 400 });
+      return Response.json({ success: false, error: '尚未在后台配置并保存 X Cookie 凭据。请先登录 /admin 页面点击一次“一键同步全量关注”。' }, { status: 400 });
     }
 
     const cleanCt0 = cred.ct0.trim();
@@ -47,19 +48,23 @@ export async function onRequestGet({ env }) {
       'referer': 'https://x.com/'
     };
 
-    let userId = '';
-    try {
-      const uRes = await fetch('https://x.com/i/api/1.1/account/verify_credentials.json', {
-        headers: apiHeaders,
-        signal: AbortSignal.timeout(10000)
-      });
-      if (uRes.ok) {
-        const uData = await uRes.json();
-        if (uData && (uData.id_str || uData.id)) {
-          userId = String(uData.id_str || uData.id);
+    let userId = cred.user_id || '';
+
+    // 若未预存 user_id，尝试动态在线提取
+    if (!userId) {
+      try {
+        const uRes = await fetch('https://x.com/i/api/1.1/account/verify_credentials.json', {
+          headers: apiHeaders,
+          signal: AbortSignal.timeout(10000)
+        });
+        if (uRes.ok) {
+          const uData = await uRes.json();
+          if (uData && (uData.id_str || uData.id)) {
+            userId = String(uData.id_str || uData.id);
+          }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
 
     if (!userId) {
       return Response.json({ success: false, error: '保存的 Cookie 已失效，无法解析 userId' }, { status: 401 });
