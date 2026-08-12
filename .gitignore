@@ -5,3 +5,4 @@ test-*.js
 find-*.js
 inspect-*.js
 .env
+data/credentials.json

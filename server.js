@@ -24,7 +24,6 @@ app.get('/admin', (req, res) => {
 const DATA_DIR = path.join(__dirname, 'data');
 const ARCHIVE_FILE = path.join(DATA_DIR, 'archive.json');
 const CREDENTIALS_FILE = path.join(DATA_DIR, 'credentials.json');
-const DEMO_FILE = path.join(__dirname, 'demo-data.json');
 
 // 保证数据目录存在
 if (!fs.existsSync(DATA_DIR)) {
@@ -61,12 +60,6 @@ function getArchivedData() {
   if (fs.existsSync(ARCHIVE_FILE)) {
     try {
       const raw = fs.readFileSync(ARCHIVE_FILE, 'utf8');
-      return JSON.parse(raw);
-    } catch (e) {}
-  }
-  if (fs.existsSync(DEMO_FILE)) {
-    try {
-      const raw = fs.readFileSync(DEMO_FILE, 'utf8');
       return JSON.parse(raw);
     } catch (e) {}
   }
