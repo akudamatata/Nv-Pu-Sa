@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         coverSrc = fallbackCovers[idx % fallbackCovers.length];
       }
 
-      const categoryTag = 'Top Creator';
+      const categoryTag = (user.followers_count >= 500000) ? 'Top Creator' : 'Creator';
 
       const formattedBio = formatBioWithLinks(user.description);
 
