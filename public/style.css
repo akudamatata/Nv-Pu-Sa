@@ -958,11 +958,10 @@ body {
 }
 
 .admin-login-logo-img {
-  width: 72px;
-  height: 72px;
-  border-radius: 16px;
+  width: 110px;
+  height: 110px;
   object-fit: contain;
-  filter: drop-shadow(0 10px 24px rgba(56, 189, 248, 0.35));
+  filter: drop-shadow(0 14px 32px rgba(56, 189, 248, 0.45));
 }
 
 .auth-card-header h2 {
