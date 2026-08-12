@@ -155,8 +155,9 @@ body {
 .brand-logo-img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  border: none;
+  object-fit: cover;
+  border-radius: 9px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
 }
 
 .logo-icon.admin-icon {
@@ -952,7 +953,16 @@ body {
   background: transparent;
   border: none;
   padding: 0;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+}
+
+.admin-login-logo-img {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  border: 1.5px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 12px 36px -6px rgba(56, 189, 248, 0.35);
+  object-fit: cover;
 }
 
 .auth-card-header h2 {
