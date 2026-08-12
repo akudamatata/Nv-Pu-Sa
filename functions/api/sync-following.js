@@ -167,6 +167,7 @@ export async function onRequestPost({ request, env }) {
             if (entry.entryId?.startsWith('user-')) {
               foundEntries = true;
               const resObj = entry.content?.itemContent?.user_results?.result;
+              if (resObj) {
                 const screen_name = resObj.core?.screen_name || resObj.legacy?.screen_name || '';
                 const name = resObj.core?.name || resObj.legacy?.name || screen_name;
                 const avatar_url = (resObj.avatar?.image_url || resObj.legacy?.profile_image_url_https || '').replace('_normal', '_400x400');
