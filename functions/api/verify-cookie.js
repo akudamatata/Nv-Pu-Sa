@@ -76,7 +76,7 @@ export async function onRequestPost({ request, env }) {
 
     const targetUserId = user_id || '1701615602862092288';
 
-    // 将验证成功的 Cookie 凭据与 user_id 安全保存至 D1 数据库中
+    // 将验证成功的 Cookie 凭据、user_id 与用户资料一并安全保存至 D1 数据库中
     const db = getD1(env);
     let db_saved = false;
 
@@ -88,24 +88,32 @@ export async function onRequestPost({ request, env }) {
             ct0 TEXT NOT NULL,
             auth_token TEXT NOT NULL,
             user_id TEXT,
+            x_name TEXT,
+            x_screen_name TEXT,
+            x_avatar_url TEXT,
             updated_at TEXT
           )
         `).run();
 
-        try {
-          await db.prepare(`ALTER TABLE admin_credentials ADD COLUMN user_id TEXT`).run();
-        } catch (e) {}
+        // 平滑列升级（兼容旧表结构）
+        const colsToAdd = ['user_id TEXT', 'x_name TEXT', 'x_screen_name TEXT', 'x_avatar_url TEXT'];
+        for (const col of colsToAdd) {
+          try { await db.prepare(`ALTER TABLE admin_credentials ADD COLUMN ${col}`).run(); } catch (e) {}
+        }
 
-        // 显式位置绑定，绝对防止 null 与错位
+        // 显式位置绑定，包含用户资料一并落库
         await db.prepare(`
-          INSERT INTO admin_credentials (id, ct0, auth_token, user_id, updated_at)
-          VALUES (1, ?, ?, ?, ?)
+          INSERT INTO admin_credentials (id, ct0, auth_token, user_id, x_name, x_screen_name, x_avatar_url, updated_at)
+          VALUES (1, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(id) DO UPDATE SET
             ct0 = excluded.ct0,
             auth_token = excluded.auth_token,
             user_id = excluded.user_id,
+            x_name = excluded.x_name,
+            x_screen_name = excluded.x_screen_name,
+            x_avatar_url = excluded.x_avatar_url,
             updated_at = excluded.updated_at
-        `).bind(cleanCt0, cleanAuth, targetUserId, new Date().toISOString()).run();
+        `).bind(cleanCt0, cleanAuth, targetUserId, name, screen_name, avatar_url, new Date().toISOString()).run();
 
         db_saved = true;
       } catch (e) {

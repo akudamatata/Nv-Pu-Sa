@@ -124,8 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
   async function initCredentialsAndXUser() {
     let ct0 = localStorage.getItem('x_archive_ct0') || '';
     let authToken = localStorage.getItem('x_archive_auth_token') || '';
+    let cloudUser = null; // D1 返回的用户资料
 
-    // 若本地无凭据，尝试从服务端 / 云端 D1 数据库读取先前保存的凭据
+    // 若本地无凭据，从云端 D1 数据库拉取已保存的凭据与用户资料
     if (!ct0 || !authToken) {
       try {
         const credRes = await fetch('/api/admin/credentials', {
@@ -137,6 +138,11 @@ document.addEventListener('DOMContentLoaded', () => {
           authToken = credJson.authToken;
           localStorage.setItem('x_archive_ct0', ct0);
           localStorage.setItem('x_archive_auth_token', authToken);
+          // D1 中已有用户资料，直接使用，无需再去 x.com 验证
+          if (credJson.user && credJson.user.screen_name) {
+            cloudUser = credJson.user;
+            localStorage.setItem('x_archive_user_info', JSON.stringify(cloudUser));
+          }
         }
       } catch (e) {}
     }
@@ -151,6 +157,25 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // 若已从 D1 拿到用户资料，直接渲染，不再重新验证
+    if (cloudUser) {
+      renderXCookieAccountBox(cloudUser);
+      return;
+    }
+
+    // 本地有凭据但无缓存用户资料时，尝试读取 localStorage 缓存
+    const cachedInfo = localStorage.getItem('x_archive_user_info');
+    if (cachedInfo) {
+      try {
+        const parsed = JSON.parse(cachedInfo);
+        if (parsed && parsed.screen_name) {
+          renderXCookieAccountBox(parsed);
+          return;
+        }
+      } catch (e) {}
+    }
+
+    // 均无缓存时才走验证
     const xUser = await verifyAndFetchXUser(ct0, authToken);
 
     if (xUser) {

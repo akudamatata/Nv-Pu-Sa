@@ -1,6 +1,6 @@
 /**
- * Cloudflare Pages Functions - Get Stored Credentials from D1
- * 自动建表 + 从 D1 拉取已保存的 X Cookie 凭据
+ * Cloudflare Pages Functions - Get Stored Credentials & X User Profile from D1
+ * 自动建表 + 从 D1 拉取已保存的 X Cookie 凭据与用户资料
  */
 function getD1(env) {
   return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
@@ -48,25 +48,40 @@ export async function onRequestGet({ request, env }) {
             ct0 TEXT NOT NULL,
             auth_token TEXT NOT NULL,
             user_id TEXT,
+            x_name TEXT,
+            x_screen_name TEXT,
+            x_avatar_url TEXT,
             updated_at TEXT
           )
         `).run();
       } catch (e) {}
 
-      // 从 D1 读取保存的凭据
+      // 从 D1 读取保存的凭据与用户资料
       try {
         const cred = await db.prepare(`
           SELECT * FROM admin_credentials WHERE id = 1
         `).first();
 
         if (cred && cred.ct0 && cred.auth_token) {
-          return Response.json({
+          const result = {
             success: true,
             hasCredentials: true,
             ct0: cred.ct0,
             authToken: cred.auth_token,
             user_id: cred.user_id || ''
-          });
+          };
+
+          // 若 D1 中已有用户资料，一并返回
+          if (cred.x_screen_name) {
+            result.user = {
+              name: cred.x_name || cred.x_screen_name,
+              screen_name: cred.x_screen_name,
+              avatar_url: cred.x_avatar_url || '',
+              user_id: cred.user_id || ''
+            };
+          }
+
+          return Response.json(result);
         }
       } catch (e) {}
     }
