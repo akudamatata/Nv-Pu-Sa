@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const json = await res.json();
 
       btnSubmitLogin.disabled = false;
-      btnSubmitLogin.querySelector('span').textContent = '解密并进入管理后台';
+      btnSubmitLogin.querySelector('span').textContent = '解密并进入控制台';
 
       if (json.success && json.token) {
         adminSessionToken = json.token;
@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (err) {
       btnSubmitLogin.disabled = false;
-      btnSubmitLogin.querySelector('span').textContent = '解密并进入管理后台';
+      btnSubmitLogin.querySelector('span').textContent = '解密并进入控制台';
       loginErrorMsg.textContent = '❌ 网络请求异常';
       loginErrorMsg.classList.remove('hidden');
     }

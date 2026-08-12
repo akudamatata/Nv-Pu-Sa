@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         coverSrc = fallbackCovers[idx % fallbackCovers.length];
       }
 
-      const categoryTag = user.category || (user.followers_count > 500000 ? 'Top Creator' : 'Curated Blogger');
+      const categoryTag = 'Top Creator';
 
       const formattedBio = formatBioWithLinks(user.description);
 
