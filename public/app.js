@@ -212,7 +212,15 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'blogger-showcase-card';
 
       const avatarSrc = user.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
-      const coverSrc = user.cover_url || fallbackCovers[idx % fallbackCovers.length];
+      
+      let coverSrc = user.cover_url || '';
+      if (coverSrc && coverSrc.includes('pbs.twimg.com/profile_banners') && !coverSrc.match(/\/(600x200|1500x500|responsive_web)$/)) {
+        coverSrc = coverSrc.replace(/\/+$/, '') + '/600x200';
+      }
+      if (!coverSrc) {
+        coverSrc = fallbackCovers[idx % fallbackCovers.length];
+      }
+
       const categoryTag = user.category || (user.followers_count > 500000 ? 'Top Creator' : 'Curated Blogger');
 
       const formattedBio = formatBioWithLinks(user.description);

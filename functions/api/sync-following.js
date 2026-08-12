@@ -167,11 +167,13 @@ export async function onRequestPost({ request, env }) {
             if (entry.entryId?.startsWith('user-')) {
               foundEntries = true;
               const resObj = entry.content?.itemContent?.user_results?.result;
-              if (resObj) {
                 const screen_name = resObj.core?.screen_name || resObj.legacy?.screen_name || '';
                 const name = resObj.core?.name || resObj.legacy?.name || screen_name;
                 const avatar_url = (resObj.avatar?.image_url || resObj.legacy?.profile_image_url_https || '').replace('_normal', '_400x400');
-                const cover_url = resObj.legacy?.profile_banner_url || '';
+                let cover_url = resObj.legacy?.profile_banner_url || resObj.profile_banner_url || '';
+                if (cover_url && !cover_url.endsWith('/600x200') && !cover_url.endsWith('/1500x500')) {
+                  cover_url = cover_url.replace(/\/+$/, '') + '/600x200';
+                }
                 const followers_count = resObj.relationship_counts?.followers || resObj.legacy?.followers_count || 0;
                 
                 // 解析完整 Bio
