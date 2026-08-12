@@ -264,7 +264,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   adminLoginForm?.addEventListener('submit', handleAdminLogin);
-  btnSubmitLogin?.addEventListener('click', handleAdminLogin);
 
   // Vault Credentials Save -> 登录 X 账号
   function updateCredBadge(isReady) {
