@@ -122,8 +122,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 3. Load & Verify Cookie Credentials -> Render X Account in Cookie Module
   async function initCredentialsAndXUser() {
-    const ct0 = localStorage.getItem('x_archive_ct0') || '';
-    const authToken = localStorage.getItem('x_archive_auth_token') || '';
+    let ct0 = localStorage.getItem('x_archive_ct0') || '';
+    let authToken = localStorage.getItem('x_archive_auth_token') || '';
+
+    // 若本地无凭据，尝试从服务端 / 云端 D1 数据库读取先前保存的凭据
+    if (!ct0 || !authToken) {
+      try {
+        const credRes = await fetch('/api/admin/credentials', {
+          headers: { 'x-admin-token': adminSessionToken }
+        });
+        const credJson = await credRes.json();
+        if (credJson.success && credJson.hasCredentials && credJson.ct0 && credJson.authToken) {
+          ct0 = credJson.ct0;
+          authToken = credJson.authToken;
+          localStorage.setItem('x_archive_ct0', ct0);
+          localStorage.setItem('x_archive_auth_token', authToken);
+        }
+      } catch (e) {}
+    }
 
     if (ct0) inputCt0.value = ct0;
     if (authToken) inputAuthToken.value = authToken;

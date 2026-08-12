@@ -23,11 +23,26 @@ app.get('/admin', (req, res) => {
 
 const DATA_DIR = path.join(__dirname, 'data');
 const ARCHIVE_FILE = path.join(DATA_DIR, 'archive.json');
+const CREDENTIALS_FILE = path.join(DATA_DIR, 'credentials.json');
 const DEMO_FILE = path.join(__dirname, 'demo-data.json');
 
 // 保证数据目录存在
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// 工具函数：获取与保存凭据
+function getSavedCredentials() {
+  if (fs.existsSync(CREDENTIALS_FILE)) {
+    try {
+      return JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf8'));
+    } catch (e) {}
+  }
+  return null;
+}
+
+function saveCredentials(cred) {
+  fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(cred, null, 2), 'utf8');
 }
 
 // 缓存与状态管理
@@ -106,6 +121,21 @@ function requireAdmin(req, res, next) {
 
 // ==================== 3. 私密 Admin 操作 API ====================
 
+// 获取已保存的凭据 (受保护)
+app.get('/api/admin/credentials', requireAdmin, (req, res) => {
+  const cred = getSavedCredentials();
+  if (cred && cred.ct0 && cred.authToken) {
+    return res.json({
+      success: true,
+      hasCredentials: true,
+      ct0: cred.ct0,
+      authToken: cred.authToken,
+      user_id: cred.user_id || ''
+    });
+  }
+  return res.json({ success: true, hasCredentials: false });
+});
+
 // 覆盖/重置保存本地数据库 (受保护)
 app.post('/api/archive', requireAdmin, (req, res) => {
   const { data } = req.body;
@@ -126,6 +156,7 @@ app.post('/api/verify-cookie', requireAdmin, async (req, res) => {
   try {
     const spider = new TwitterSpider(authToken, ct0);
     const userInfo = await spider.verifyCredentials();
+    saveCredentials({ ct0, authToken, user_id: userInfo.user_id || '' });
     res.json({ success: true, user: userInfo });
   } catch (err) {
     res.status(401).json({ success: false, error: err.message });
