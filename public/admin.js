@@ -365,6 +365,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const json = await res.json();
 
       if (json.success) {
+        // 模式 A: Cloudflare Pages Edge 模式 (直接返回抓取到的关注博主数组)
+        if (Array.isArray(json.following)) {
+          btnTriggerSync.disabled = false;
+          syncProgressFill.style.width = '100%';
+          syncProgressStatusText.textContent = `✅ 同步完成！已备份 ${json.count || 0} 位关注博主入库`;
+          syncProgressCountText.textContent = `${json.count || 0} 总数`;
+          
+          if (json.following.length > 0) {
+            json.following.slice(0, 15).forEach(u => {
+              logTerminal(`[FETCH] 抓取到: @${u.screen_name} (${u.name}) · 粉丝: ${u.followers_count}`);
+            });
+            if (json.following.length > 15) {
+              logTerminal(`[INFO] ... 以及其余 ${json.following.length - 15} 位博主数据已全部写入 D1 数据库。`);
+            }
+          }
+          logTerminal(`[SUCCESS] Cloudflare D1 同步完成！当前数据库总计 ${json.count || 0} 人。`);
+          showToast(`✅ 同步完成！已写入 D1 数据库 (${json.count || 0} 人)`);
+          return;
+        }
+
+        // 模式 B: Node.js 本地后台长轮询任务模式
         showToast('🚀 增量同步任务已在后台启动');
         startPollingSyncStatus();
       } else {

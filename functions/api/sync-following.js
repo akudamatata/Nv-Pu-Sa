@@ -1,9 +1,41 @@
 /**
- * Cloudflare Pages Functions - Sync Following API (Edge Serverless Engine)
- * 全自动兼容 Auto-Table Creation & D1 数据库持久落库
+ * Cloudflare Pages Functions - Sync Following API (Edge Serverless Engine v26.0)
+ * 1. 动态/降级检索有效 QueryID
+ * 2. 完美适配 timeline 与 timeline_v2 响应结构
+ * 3. 完整 Bio 展开 (换行/t.co/Website/Location)
+ * 4. 自动创表与 Cloudflare D1 持久落库
  */
+
 function getD1(env) {
   return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
+}
+
+function parseFullDescription(resObj) {
+  let bio = resObj.profile_bio?.description || resObj.legacy?.description || '';
+  const urls = resObj.profile_bio?.entities?.description?.urls || resObj.legacy?.entities?.description?.urls || [];
+  
+  if (Array.isArray(urls) && urls.length > 0) {
+    urls.forEach(u => {
+      if (u.url) {
+        const displayLink = u.expanded_url || u.display_url || u.url;
+        bio = bio.split(u.url).join(displayLink);
+      }
+    });
+  }
+
+  const website = resObj.profile_bio?.entities?.url?.urls?.[0]?.expanded_url || 
+                  resObj.legacy?.entities?.url?.urls?.[0]?.expanded_url || 
+                  resObj.legacy?.url || '';
+  if (website) {
+    bio += `\n🔗 网址: ${website}`;
+  }
+
+  const location = resObj.location?.location || resObj.legacy?.location || '';
+  if (location) {
+    bio += `\n📍 位置: ${location}`;
+  }
+
+  return bio.trim();
 }
 
 export async function onRequestPost({ request, env }) {
@@ -25,43 +57,51 @@ export async function onRequestPost({ request, env }) {
       'x-twitter-auth-type': 'OAuth2Session',
       'x-twitter-client-language': 'zh-cn',
       'accept': '*/*',
+      'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
       'referer': 'https://x.com/'
     };
 
+    const pageHeaders = {
+      'cookie': `auth_token=${cleanAuth}; ct0=${cleanCt0};`,
+      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      'referer': 'https://x.com/'
+    };
+
+    // 1. 获取登录用户资料与 user_id / following_count
     let userId = '';
+    let screenName = '';
+    let followingCount = 0;
 
-    // 1. 优先从官方验证 API 提取 id_str (userId)
     try {
-      const uRes = await fetch('https://x.com/i/api/1.1/account/verify_credentials.json', {
-        headers: apiHeaders,
-        signal: AbortSignal.timeout(10000)
-      });
-
+      const uRes = await fetch('https://x.com', { headers: pageHeaders, signal: AbortSignal.timeout(10000) });
       if (uRes.ok) {
-        const uData = await uRes.json();
-        if (uData && (uData.id_str || uData.id)) {
-          userId = String(uData.id_str || uData.id);
-        }
+        const html = await uRes.text();
+        const snMatch = html.match(/"screen_name":"(.*?)"/);
+        if (snMatch && snMatch[1]) screenName = snMatch[1];
+        
+        const idMatches = html.match(/"rest_id":"(\d+)"/) || html.match(/"user_id":"(\d+)"/) || html.match(/"id_str":"(\d+)"/);
+        if (idMatches && idMatches[1]) userId = idMatches[1];
       }
     } catch (e) {}
 
-    // 2. 降级备用：从 HTML 中读取
-    if (!userId) {
-      const pageHeaders = {
-        'cookie': `auth_token=${cleanAuth}; ct0=${cleanCt0};`,
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'referer': 'https://x.com/'
-      };
-
-      const mainRes = await fetch('https://x.com', { headers: pageHeaders, signal: AbortSignal.timeout(10000) });
-      if (mainRes.ok) {
-        const html = await mainRes.text();
-        const matches = html.match(/"rest_id":"(\d+)"/) || html.match(/"user_id":"(\d+)"/);
-        if (matches && matches[1]) {
-          userId = matches[1];
+    // 若已知 screenName，进一步获取其精准 targetFollowingCount
+    if (screenName) {
+      try {
+        const pRes = await fetch(`https://x.com/${screenName}`, { headers: pageHeaders, signal: AbortSignal.timeout(8000) });
+        if (pRes.ok) {
+          const phtml = await pRes.text();
+          const friendsMatch = phtml.match(/"friends_count":(\d+)/) || phtml.match(/"following_count":(\d+)/);
+          if (friendsMatch && friendsMatch[1]) {
+            followingCount = parseInt(friendsMatch[1], 10);
+          }
+          if (!userId) {
+            const pIdMatch = phtml.match(/"rest_id":"(\d+)"/) || phtml.match(/"user_id":"(\d+)"/);
+            if (pIdMatch && pIdMatch[1]) userId = pIdMatch[1];
+          }
         }
-      }
+      } catch (e) {}
     }
 
     if (!userId) {
@@ -70,7 +110,7 @@ export async function onRequestPost({ request, env }) {
 
     const db = getD1(env);
 
-    // 顺便自动保存有效的 Cookie 与 user_id 到 D1 数据表中供定时任务无门槛调用
+    // 自动备份凭据与 user_id
     if (db) {
       try {
         await db.prepare(`
@@ -98,7 +138,28 @@ export async function onRequestPost({ request, env }) {
       } catch (e) {}
     }
 
-    const queryId = 'qGZZDF3mp91q7X22s3HxpA';
+    // 2. 动态检索最新 Query ID
+    let activeQueryId = 'qGZZDF3mp91q7X22s3HxpA';
+    try {
+      const qRes = await fetch('https://x.com/following', { headers: pageHeaders, signal: AbortSignal.timeout(8000) });
+      if (qRes.ok) {
+        const qHtml = await qRes.text();
+        const jsUrls = qHtml.match(/https:\/\/abs\.twimg\.com\/responsive-web\/client-web\/[^"]+\.js/g) || [];
+        for (const url of jsUrls.slice(0, 5)) {
+          try {
+            const jsRes = await fetch(url, { signal: AbortSignal.timeout(4000) });
+            const jsText = await jsRes.text();
+            const match = jsText.match(/queryId:"([^"]+)",operationName:"Following"/i) ||
+                          jsText.match(/operationName:"Following",queryId:"([^"]+)"/i);
+            if (match && match[1]) {
+              activeQueryId = match[1];
+              break;
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+
     const features = {
       "rweb_video_screen_enabled": true,
       "rweb_cashtags_enabled": true,
@@ -131,11 +192,13 @@ export async function onRequestPost({ request, env }) {
     };
 
     const fetchedUsers = [];
+    const allUsersMap = new Map();
     let cursor = null;
-    let hasMore = true;
+    let attempts = 0;
 
-    // 分页拉取关注列表
-    while (hasMore && fetchedUsers.length < 200) {
+    // 3. 执行关注列表分页抓取
+    while (attempts < 20) {
+      attempts++;
       const variables = {
         userId: userId,
         count: 50,
@@ -150,74 +213,90 @@ export async function onRequestPost({ request, env }) {
         features: JSON.stringify(features)
       });
 
-      const url = `https://x.com/i/api/graphql/${queryId}/Following?${params.toString()}`;
+      const url = `https://x.com/i/api/graphql/${activeQueryId}/Following?${params.toString()}`;
       
       const res = await fetch(url, { headers: apiHeaders, signal: AbortSignal.timeout(12000) });
       if (!res.ok) {
-        throw new Error(`X API 请求失败 (HTTP ${res.status})`);
+        break;
       }
 
       const json = await res.json();
-      const instructions = json.data?.user?.result?.timeline?.timeline?.instructions || [];
-      let foundEntries = false;
+      const instructions = json?.data?.user?.result?.timeline?.timeline?.instructions || 
+                           json?.data?.user?.result?.timeline_v2?.timeline?.instructions || [];
 
+      let entries = [];
       for (const inst of instructions) {
         if (inst.type === 'TimelineAddEntries' && Array.isArray(inst.entries)) {
-          for (const entry of inst.entries) {
-            if (entry.entryId?.startsWith('user-')) {
-              foundEntries = true;
-              const resObj = entry.content?.itemContent?.user_results?.result;
-              if (resObj) {
-                const screen_name = resObj.core?.screen_name || resObj.legacy?.screen_name || '';
-                const name = resObj.core?.name || resObj.legacy?.name || screen_name;
-                const avatar_url = (resObj.avatar?.image_url || resObj.legacy?.profile_image_url_https || '').replace('_normal', '_400x400');
-                let cover_url = resObj.legacy?.profile_banner_url || resObj.profile_banner_url || '';
-                if (cover_url && !cover_url.endsWith('/600x200') && !cover_url.endsWith('/1500x500')) {
-                  cover_url = cover_url.replace(/\/+$/, '') + '/600x200';
-                }
-                const followers_count = resObj.relationship_counts?.followers || resObj.legacy?.followers_count || 0;
-                
-                // 解析完整 Bio
-                let bio = resObj.profile_bio?.description || resObj.legacy?.description || '';
-                const website = resObj.profile_bio?.entities?.url?.urls?.[0]?.expanded_url || resObj.legacy?.url || '';
-                if (website) bio += `\n🔗 网址: ${website}`;
-                const location = resObj.location?.location || resObj.legacy?.location;
-                if (location) bio += `\n📍 位置: ${location}`;
-
-                if (screen_name) {
-                  fetchedUsers.push({
-                    id: String(resObj.rest_id || screen_name),
-                    screen_name,
-                    name,
-                    avatar_url,
-                    cover_url,
-                    followers_count,
-                    description: bio,
-                    verified: resObj.is_blue_verified || resObj.legacy?.verified ? 1 : 0,
-                    backed_up_at: new Date().toISOString()
-                  });
-                }
-              }
-            } else if (entry.entryId?.startsWith('cursor-bottom-')) {
-              const nextCursor = entry.content?.value;
-              if (nextCursor && nextCursor !== cursor) {
-                cursor = nextCursor;
-              } else {
-                hasMore = false;
-              }
-            }
-          }
+          entries = inst.entries;
+          break;
         }
       }
 
-      if (!foundEntries) {
-        hasMore = false;
+      if (entries.length === 0) {
+        break;
+      }
+
+      let nextCursorVal = null;
+      for (const entry of entries) {
+        if (entry.entryId?.startsWith('cursor-bottom-') || entry.content?.cursorType === 'Bottom') {
+          nextCursorVal = entry.content?.value;
+          continue;
+        }
+
+        const resObj = entry.content?.itemContent?.user_results?.result;
+        if (!resObj) continue;
+
+        const uScreenName = resObj.core?.screen_name || resObj.legacy?.screen_name || '';
+        const uName = resObj.core?.name || resObj.legacy?.name || uScreenName;
+        if (!uScreenName) continue;
+
+        const avatarRaw = resObj.avatar?.image_url || resObj.legacy?.profile_image_url_https || '';
+        let coverRaw = resObj.banner?.image_url || resObj.legacy?.profile_banner_url || '';
+        if (coverRaw && !coverRaw.endsWith('/600x200') && !coverRaw.endsWith('/1500x500')) {
+          coverRaw = coverRaw.replace(/\/+$/, '') + '/600x200';
+        }
+
+        const followers = resObj.relationship_counts?.followers || resObj.legacy?.followers_count || 0;
+        const isVerified = !!(resObj.is_blue_verified || resObj.verification?.verified || resObj.legacy?.verified);
+        const fullBio = parseFullDescription(resObj);
+
+        const formattedUser = {
+          id: String(resObj.rest_id || uScreenName),
+          screen_name: uScreenName,
+          name: uName,
+          avatar_url: avatarRaw ? avatarRaw.replace('_normal', '_400x400') : '',
+          cover_url: coverRaw || '',
+          followers_count: followers,
+          description: fullBio,
+          verified: isVerified ? 1 : 0,
+          backed_up_at: new Date().toISOString()
+        };
+
+        const uLower = uScreenName.toLowerCase();
+        if (!allUsersMap.has(uLower)) {
+          allUsersMap.set(uLower, formattedUser);
+          fetchedUsers.push(formattedUser);
+        }
+
+        if (followingCount > 0 && allUsersMap.size >= followingCount) {
+          break;
+        }
+      }
+
+      if (followingCount > 0 && allUsersMap.size >= followingCount) {
+        break;
+      }
+
+      if (nextCursorVal && nextCursorVal !== cursor) {
+        cursor = nextCursorVal;
+      } else {
+        break;
       }
     }
 
     let dbSuccess = false;
 
-    // 存入 Cloudflare D1 数据库
+    // 4. 存入 Cloudflare D1 数据库
     if (db && fetchedUsers.length > 0) {
       try {
         await db.prepare(`
@@ -240,23 +319,28 @@ export async function onRequestPost({ request, env }) {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
-        const batch = fetchedUsers.map(item => {
-          return stmt.bind(
-            item.id,
-            item.screen_name,
-            item.name,
-            item.avatar_url,
-            item.cover_url,
-            item.followers_count,
-            item.description,
-            item.verified,
-            item.backed_up_at
-          );
-        });
-
-        await db.batch(batch);
+        // D1 batch 最大单次 100 条
+        for (let i = 0; i < fetchedUsers.length; i += 80) {
+          const chunk = fetchedUsers.slice(i, i + 80);
+          const batch = chunk.map(item => {
+            return stmt.bind(
+              item.id,
+              item.screen_name,
+              item.name,
+              item.avatar_url,
+              item.cover_url,
+              item.followers_count,
+              item.description,
+              item.verified,
+              item.backed_up_at
+            );
+          });
+          await db.batch(batch);
+        }
         dbSuccess = true;
-      } catch (e) {}
+      } catch (e) {
+        console.error('D1 batch 写入异常:', e.message);
+      }
     }
 
     return Response.json({
