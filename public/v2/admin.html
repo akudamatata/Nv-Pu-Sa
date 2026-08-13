@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>女菩萨 · 管理控制台与密钥库 v2</title>
+  <link rel="icon" type="image/png" href="/logo-icon.png">
+  
+  <!-- Modern Typography Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/v2/style.css">
+</head>
+<body>
+
+  <!-- Starfield Canvas Particles Background -->
+  <canvas id="bg-particles-canvas"></canvas>
+
+  <div class="app-container">
+    
+    <!-- Top Sticky Header -->
+    <header class="v2-header">
+      <div class="header-inner admin-header-inner">
+        <div class="header-brand-group">
+          <a href="/v2" class="brand-link">
+            <div class="brand-avatar">
+              <img src="/logo-icon.png" alt="女菩萨" class="brand-img" onerror="this.style.display='none'">
+            </div>
+            <div class="brand-text">
+              <span class="brand-name">女菩萨</span>
+            </div>
+          </a>
+        </div>
+
+        <div class="header-actions" id="admin-header-actions">
+          <a href="/v2" class="btn-nav-pill" title="返回画廊主页">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            <span>返回画廊</span>
+          </a>
+          <button id="btn-admin-logout" class="btn-nav-pill hidden" title="登出管理员">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            <span>退出登录</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 1. Passcode Lock Screen Auth Gate Modal -->
+    <div id="auth-gate-screen" class="auth-gate-overlay">
+      <div class="auth-card-window" id="auth-card-box">
+        <div class="auth-card-header">
+          <div class="auth-lock-icon">
+            <img src="/logo-icon.png" alt="女菩萨" onerror="this.style.display='none'">
+          </div>
+          <h2>管理员通行鉴权</h2>
+          <p>请输入控制台授权账号与通行密码</p>
+        </div>
+
+        <form id="admin-login-form" class="auth-form-body" onsubmit="return false;">
+          <div class="field-group">
+            <label for="login-user">管理员账号 (Username)</label>
+            <input type="text" id="login-user" required placeholder="请输入管理员账号" autocomplete="username">
+          </div>
+
+          <div class="field-group">
+            <label for="login-pass">通行密码 (Passcode)</label>
+            <input type="password" id="login-pass" required placeholder="请输入通行密码" autocomplete="current-password">
+          </div>
+
+          <div id="login-error-msg" class="auth-error-banner hidden"></div>
+
+          <button type="submit" id="btn-submit-login" class="btn-primary-action full-w" style="margin-top: 10px;">
+            <span>解密并进入控制台</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 2. Authenticated Admin Dashboard -->
+    <main id="admin-dashboard-screen" class="admin-shell-container hidden">
+      
+      <!-- Welcome Hero -->
+      <div class="admin-welcome-hero">
+        <div class="welcome-text-group">
+          <h1 class="admin-page-title"><span class="shiny-text">管理控制台 & 密钥库</span></h1>
+          <p class="admin-page-desc">配置 X Cookie 抓取凭据、执行智能增量/全量同步引擎及归档数据管理</p>
+        </div>
+      </div>
+
+      <!-- Bento Grid -->
+      <div class="admin-bento-grid">
+        
+        <!-- Left Main Column -->
+        <div class="bento-col-main">
+          
+          <!-- Panel 1: X Cookie Credentials -->
+          <section class="vault-panel-card" id="panel-credentials">
+            <div class="panel-header-line">
+              <div class="panel-heading">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+                <h2>X (Twitter) Cookie 凭据配置</h2>
+              </div>
+              <div id="cred-status-indicator" class="status-tag inactive">
+                <span class="tag-dot"></span>
+                <span id="cred-status-text">未登录 X 账号</span>
+              </div>
+            </div>
+
+            <!-- Active Logged-in X Account Card -->
+            <div id="x-cookie-account-box" class="x-cookie-account-card hidden">
+              <div class="x-account-left">
+                <img id="x-account-avatar" class="x-account-avatar-img" src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="X Avatar">
+                <div class="x-account-info">
+                  <div class="x-account-name-row">
+                    <span id="x-account-name" class="x-account-display-name">已绑定 X 账号</span>
+                    <span class="x-status-pill">✓ 凭据就绪</span>
+                  </div>
+                  <span id="x-account-handle" class="x-account-screen-handle">@x_user</span>
+                </div>
+              </div>
+
+              <div class="x-account-actions">
+                <button id="btn-logout-x-account" class="btn-secondary-action btn-danger-full">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                  <span>登出账号</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Cookie Form Wrapper -->
+            <div id="cookie-form-wrapper">
+              <div class="guide-banner">
+                <div class="guide-head">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  <span>凭据获取指引：</span>
+                </div>
+                <div class="guide-content">登录 <a href="https://x.com" target="_blank" style="color:var(--accent-primary); text-decoration:underline;">x.com</a> 后按 <code>F12</code> 打开开发者工具 → Application → Cookies 复制 <code>ct0</code> 与 <code>auth_token</code>。</div>
+              </div>
+
+              <form id="vault-cookie-form" onsubmit="return false;">
+                <div class="fields-row-2">
+                  <div class="field-group">
+                    <label for="input-ct0"><code>ct0</code> (CSRF Token)</label>
+                    <input type="text" id="input-ct0" required placeholder="例如: 9f8a7b6c5d4e3f2a..." autocomplete="off">
+                  </div>
+
+                  <div class="field-group">
+                    <label for="input-auth-token"><code>auth_token</code></label>
+                    <input type="password" id="input-auth-token" required placeholder="例如: 403db3f572bc45a..." autocomplete="off">
+                  </div>
+                </div>
+
+                <div class="form-actions-bar">
+                  <label class="remember-checkbox-label">
+                    <input type="checkbox" id="chk-remember-cred" checked>
+                    <span>在本地安全记住凭据</span>
+                  </label>
+
+                  <div style="display: flex; gap: 10px;">
+                    <button type="button" id="btn-clear-cred" class="btn-secondary-action">清空</button>
+                    <button type="button" id="btn-save-cred" class="btn-primary-action">校验并登录 X</button>
+                  </div>
+                </div>
+
+                <div id="cred-form-msg" class="auth-error-banner hidden" style="margin-top: 14px;"></div>
+              </form>
+            </div>
+
+          </section>
+
+          <!-- Panel 2: Smart Sync Engine -->
+          <section class="vault-panel-card" id="panel-sync">
+            <div class="panel-header-line">
+              <div class="panel-heading">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                <h2>关注列表增量同步引擎</h2>
+              </div>
+            </div>
+
+            <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">
+              智能对比本地与云端数据，触发增量抓取，自动解析 Bio 链接与高清头像，去重落库。
+            </p>
+
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <button id="btn-trigger-sync" class="btn-primary-action">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                <span>一键智能增量同步</span>
+              </button>
+
+              <button id="btn-show-console-helper" class="btn-secondary-action">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                <span>浏览器控制台助手脚本</span>
+              </button>
+            </div>
+
+            <!-- Sync Live Progress Bar -->
+            <div id="sync-progress-box" class="sync-progress-box hidden">
+              <div class="sync-progress-header">
+                <span id="sync-progress-status-text">同步进行中...</span>
+                <span id="sync-progress-count-text" style="font-family: var(--font-mono); color: var(--accent-primary);">0 / 0</span>
+              </div>
+              <div class="sync-progress-track">
+                <div id="sync-progress-fill" class="sync-progress-fill"></div>
+              </div>
+            </div>
+
+            <!-- Live Terminal Log Window (Permanently visible to balance columns) -->
+            <div id="terminal-log-container" class="terminal-log-box">
+              <div class="terminal-top">
+                <span class="t-dot red"></span>
+                <span class="t-dot yellow"></span>
+                <span class="t-dot green"></span>
+                <span class="t-title">SYNC ENGINE REALTIME LOG</span>
+              </div>
+              <div id="terminal-log-output" class="terminal-content">
+                > Engine ready. Waiting for command.
+              </div>
+            </div>
+
+          </section>
+
+        </div>
+
+        <!-- Right Side Column -->
+        <div class="bento-col-side">
+          
+          <!-- Panel 3: Data Management & Backup -->
+          <section class="vault-panel-card">
+            <div class="panel-header-line">
+              <div class="panel-heading">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <h2>数据备份与管理</h2>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <button id="btn-export-json" class="btn-secondary-action full-w">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <span>导出全量 JSON 备份</span>
+              </button>
+
+              <button id="btn-import-json" class="btn-secondary-action full-w">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <span>导入恢复 JSON 备份</span>
+              </button>
+
+              <div style="height: 1px; background: var(--border-subtle); margin: 6px 0;"></div>
+
+              <button id="btn-reset-db" class="btn-secondary-action btn-danger-full full-w">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                <span>重置清空本地数据库</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Panel 4: System Infrastructure -->
+          <section class="vault-panel-card">
+            <div class="panel-heading" style="margin-bottom: 14px;">
+              <span class="shiny-gold" style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;">Infrastructure Specifications</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">Deployment:</span>
+                <span style="font-family: var(--font-mono); color: var(--text-main);">Cloudflare Pages & D1</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">Runtime:</span>
+                <span style="font-family: var(--font-mono); color: var(--text-main);">Node.js Express / Edge</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">Sync Mode:</span>
+                <span style="font-family: var(--font-mono); color: var(--accent-success);">Smart Incremental</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">Frontend Engine:</span>
+                <span style="font-family: var(--font-mono); color: var(--accent-primary);">v2 Dark Glassmorphism</span>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- Console Script Modal -->
+    <div id="modal-script" class="inspector-backdrop hidden">
+      <div class="auth-card-window" style="max-width: 600px; text-align: left;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-main);">控制台一键提取脚本</h3>
+          <button class="drawer-close-btn btn-close-modal">✕</button>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+          在已登录的 <code>x.com/following</code> 页面按 <code>F12</code> 打开控制台粘贴代码运行：
+        </p>
+        <div class="terminal-log-box" style="margin-top: 0;">
+          <pre id="modal-script-code" class="terminal-content" style="max-height: 240px;">加载脚本中...</pre>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+          <button id="btn-copy-code" class="btn-primary-action">
+            <span>复制一键脚本</span>
+          </button>
+          <button class="btn-secondary-action btn-close-modal">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden file input for JSON import -->
+    <input type="file" id="file-input-backup" accept=".json" class="hidden">
+
+    <!-- Toast Notification Overlay -->
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+    <!-- Minimal Modern Footer -->
+    <footer class="v2-footer">
+      <div class="footer-inner">
+        <div>
+          <span>女菩萨 · Admin Console v2</span>
+          <span class="dot-sep">·</span>
+          <span>Encrypted Session Gate</span>
+        </div>
+        <div>
+          <a href="/v2" class="footer-link">返回画廊</a>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="/v2/admin.js" type="module"></script>
+</body>
+</html>

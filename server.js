@@ -21,6 +21,16 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+// 路由：全新 v2 独立 UI 页面
+app.get('/v2', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'v2', 'index.html'));
+});
+
+// 路由：全新 v2 独立管理后台页面
+app.get(['/v2/admin', '/admin/v2'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'v2', 'admin.html'));
+});
+
 const DATA_DIR = path.join(__dirname, 'data');
 const ARCHIVE_FILE = path.join(DATA_DIR, 'archive.json');
 const CREDENTIALS_FILE = path.join(DATA_DIR, 'credentials.json');
