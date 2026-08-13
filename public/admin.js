@@ -1,20 +1,88 @@
 /**
- * X-Archive Admin Vault & Passcode Gate Logic (v23.0 - Clean Single Logout Action)
+ * Nv-Pu-Sa (X-Archive) v2 - Admin Console & Vault Controller
+ * Reactive Session Gate · X Credentials · Smart Sync Engine · JSON Backup
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Elements
+
+  // ==================== 1. Canvas Starfield Particles Background ====================
+  function initCanvasParticles() {
+    const canvas = document.getElementById('bg-particles-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    const numParticles = Math.min(Math.floor((width * height) / 24000), 45);
+    const particles = [];
+
+    for (let i = 0; i < numParticles; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: Math.random() * 1.4 + 0.6,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        alpha: Math.random() * 0.5 + 0.2
+      });
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, width, height);
+
+      particles.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height;
+        if (p.y > height) p.y = 0;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(56, 189, 248, ${p.alpha})`;
+        ctx.fill();
+
+        for (let j = idx + 1; j < particles.length; j++) {
+          const p2 = particles[j];
+          const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+          if (dist < 100) {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = `rgba(56, 189, 248, ${(1 - dist / 100) * 0.1})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      });
+
+      requestAnimationFrame(render);
+    }
+
+    render();
+  }
+
+  initCanvasParticles();
+
+  // ==================== 2. DOM Elements ====================
   const authGateScreen = document.getElementById('auth-gate-screen');
+  const authCardBox = document.getElementById('auth-card-box');
   const adminDashboardScreen = document.getElementById('admin-dashboard-screen');
   const adminLoginForm = document.getElementById('admin-login-form');
   const loginUser = document.getElementById('login-user');
   const loginPass = document.getElementById('login-pass');
   const loginErrorMsg = document.getElementById('login-error-msg');
   const btnSubmitLogin = document.getElementById('btn-submit-login');
+  const btnAdminLogout = document.getElementById('btn-admin-logout');
 
-  const navAdminRightArea = document.getElementById('nav-admin-right-area');
-
-  // X Cookie Account Profile Elements (Inside Cookie Panel)
+  // X Account Card & Form
   const xCookieAccountBox = document.getElementById('x-cookie-account-box');
   const xAccountAvatar = document.getElementById('x-account-avatar');
   const xAccountName = document.getElementById('x-account-name');
@@ -27,30 +95,39 @@ document.addEventListener('DOMContentLoaded', () => {
   const chkRememberCred = document.getElementById('chk-remember-cred');
   const credStatusIndicator = document.getElementById('cred-status-indicator');
   const credStatusText = document.getElementById('cred-status-text');
-  const vaultCookieForm = document.getElementById('vault-cookie-form');
   const btnClearCred = document.getElementById('btn-clear-cred');
   const btnSaveCred = document.getElementById('btn-save-cred');
+  const credFormMsg = document.getElementById('cred-form-msg');
 
+  // Sync Engine
   const btnTriggerSync = document.getElementById('btn-trigger-sync');
   const btnShowConsoleHelper = document.getElementById('btn-show-console-helper');
+  const syncProgressBox = document.getElementById('sync-progress-box');
+  const syncProgressStatusText = document.getElementById('sync-progress-status-text');
+  const syncProgressCountText = document.getElementById('sync-progress-count-text');
+  const syncProgressFill = document.getElementById('sync-progress-fill');
   const terminalLogContainer = document.getElementById('terminal-log-container');
   const terminalLogOutput = document.getElementById('terminal-log-output');
 
+  // Backup & Restore
   const btnExportJson = document.getElementById('btn-export-json');
   const btnImportJson = document.getElementById('btn-import-json');
   const btnResetDb = document.getElementById('btn-reset-db');
   const fileInputBackup = document.getElementById('file-input-backup');
 
+  // Modal
   const modalScript = document.getElementById('modal-script');
   const modalScriptCode = document.getElementById('modal-script-code');
   const btnCopyCode = document.getElementById('btn-copy-code');
+  const toastContainer = document.getElementById('toast-container');
 
   let adminSessionToken = localStorage.getItem('x_archive_admin_token') || '';
+  let syncPollingInterval = null;
 
-  // 1. Check Session & Initialize
-  async function checkAdminAuth() {
+  // ==================== 3. Admin Auth & Session Gate ====================
+  async function checkAdminSession() {
     if (!adminSessionToken) {
-      toggleGate(true);
+      showGate(true);
       return;
     }
 
@@ -64,133 +141,115 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const json = await res.json();
       if (json.authenticated) {
-        toggleGate(false);
-        renderNavAdminRight();
-        initCredentialsAndXUser();
+        showGate(false);
+        btnAdminLogout.classList.remove('hidden');
+        initCredentials();
       } else {
-        performAdminLogout();
+        performLogout();
       }
     } catch (e) {
-      toggleGate(true);
+      showGate(true);
     }
   }
 
-  function toggleGate(showGate) {
-    if (showGate) {
+  function showGate(isLocked) {
+    if (isLocked) {
       authGateScreen.classList.remove('hidden');
       adminDashboardScreen.classList.add('hidden');
+      btnAdminLogout?.classList.add('hidden');
     } else {
       authGateScreen.classList.add('hidden');
       adminDashboardScreen.classList.remove('hidden');
+      btnAdminLogout?.classList.remove('hidden');
     }
   }
 
-  // 2. Render Top Nav Right Area: Dedicated Admin Login & Logout
-  function renderNavAdminRight() {
-    if (!navAdminRightArea) return;
+  adminLoginForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = loginUser.value.trim();
+    const password = loginPass.value.trim();
 
-    navAdminRightArea.innerHTML = `
-      <div class="nav-admin-badge">
-        <div class="avatar-ring-admin">
-          <img class="nav-admin-avatar-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Admin">
-          <span class="admin-live-dot"></span>
-        </div>
-        <div class="nav-admin-meta">
-          <span class="nav-admin-title">Administrator</span>
-          <span class="nav-admin-tag">ADMIN PASSCODE</span>
-        </div>
-      </div>
+    if (!username || !password) return;
 
-      <button id="nav-btn-logout-admin" class="btn-logout-pill-nav" title="退出 Admin 账号">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-        <span>登出</span>
-      </button>
+    btnSubmitLogin.disabled = true;
+    btnSubmitLogin.querySelector('span').textContent = '正在解密...';
+    loginErrorMsg.classList.add('hidden');
 
-      <a href="/" class="btn-return-home">
-        <span>← 展示墙</span>
-      </a>
-    `;
-
-    document.getElementById('nav-btn-logout-admin')?.addEventListener('click', performAdminLogout);
-  }
-
-  function performAdminLogout() {
-    localStorage.removeItem('x_archive_admin_token');
-    adminSessionToken = '';
-    toggleGate(true);
-  }
-
-  // 3. Load & Verify Cookie Credentials -> Render X Account in Cookie Module
-  async function initCredentialsAndXUser() {
-    let ct0 = localStorage.getItem('x_archive_ct0') || '';
-    let authToken = localStorage.getItem('x_archive_auth_token') || '';
-    let cloudUser = null; // D1 返回的用户资料
-
-    // 若本地无凭据，从云端 D1 数据库拉取已保存的凭据与用户资料
-    if (!ct0 || !authToken) {
-      try {
-        const credRes = await fetch('/api/admin/credentials', {
-          headers: { 'x-admin-token': adminSessionToken }
-        });
-        const credJson = await credRes.json();
-        if (credJson.success && credJson.hasCredentials && credJson.ct0 && credJson.authToken) {
-          ct0 = credJson.ct0;
-          authToken = credJson.authToken;
-          localStorage.setItem('x_archive_ct0', ct0);
-          localStorage.setItem('x_archive_auth_token', authToken);
-          // D1 中已有用户资料，直接使用，无需再去 x.com 验证
-          if (credJson.user && credJson.user.screen_name) {
-            cloudUser = credJson.user;
-            localStorage.setItem('x_archive_user_info', JSON.stringify(cloudUser));
-          }
-        }
-      } catch (e) {}
-    }
-
-    if (ct0) inputCt0.value = ct0;
-    if (authToken) inputAuthToken.value = authToken;
-
-    updateCredBadge(!!(ct0 && authToken));
-
-    if (!ct0 || !authToken) {
-      renderXCookieAccountBox(null);
-      return;
-    }
-
-    // 若已从 D1 拿到用户资料，直接渲染，不再重新验证
-    if (cloudUser) {
-      renderXCookieAccountBox(cloudUser);
-      return;
-    }
-
-    // 本地有凭据但无缓存用户资料时，尝试读取 localStorage 缓存
-    const cachedInfo = localStorage.getItem('x_archive_user_info');
-    if (cachedInfo) {
-      try {
-        const parsed = JSON.parse(cachedInfo);
-        if (parsed && parsed.screen_name) {
-          renderXCookieAccountBox(parsed);
-          return;
-        }
-      } catch (e) {}
-    }
-
-    // 均无缓存时才走验证
-    const xUser = await verifyAndFetchXUser(ct0, authToken);
-
-    if (xUser) {
-      renderXCookieAccountBox(xUser);
-    } else {
-      const shortId = ct0.slice(0, 6);
-      renderXCookieAccountBox({
-        name: '已登录 X 账号',
-        screen_name: `user_${shortId}`,
-        avatar_url: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png'
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
       });
+      const json = await res.json();
+
+      if (json.success && json.token) {
+        adminSessionToken = json.token;
+        localStorage.setItem('x_archive_admin_token', adminSessionToken);
+        showGate(false);
+        btnAdminLogout.classList.remove('hidden');
+        showToast('🔓 通行鉴权成功，已进入控制台');
+        initCredentials();
+      } else {
+        authCardBox.classList.add('shake-error');
+        setTimeout(() => authCardBox.classList.remove('shake-error'), 500);
+        loginErrorMsg.textContent = json.error || '账号或通行密码错误';
+        loginErrorMsg.classList.remove('hidden');
+      }
+    } catch (err) {
+      loginErrorMsg.textContent = '网络错误，请稍后重试';
+      loginErrorMsg.classList.remove('hidden');
+    } finally {
+      btnSubmitLogin.disabled = false;
+      btnSubmitLogin.querySelector('span').textContent = '解密并进入控制台';
+    }
+  });
+
+  function performLogout() {
+    adminSessionToken = '';
+    localStorage.removeItem('x_archive_admin_token');
+    showGate(true);
+    showToast('已安全退出管理控制台');
+  }
+
+  btnAdminLogout?.addEventListener('click', performLogout);
+
+  // ==================== 4. X Cookie Credentials Management ====================
+  async function initCredentials() {
+    try {
+      const res = await fetch('/api/admin/credentials', {
+        headers: { 'x-admin-token': adminSessionToken }
+      });
+      const json = await res.json();
+
+      if (json.success && json.hasCredentials) {
+        inputCt0.value = json.ct0 || '';
+        inputAuthToken.value = json.authToken || '';
+        setCredStatus(true, '已保存 Cookie 凭据');
+        verifyAndShowUser(json.ct0, json.authToken, false);
+      } else {
+        // Fallback to local storage if remembered
+        const localCt0 = localStorage.getItem('x_archive_ct0');
+        const localAuth = localStorage.getItem('x_archive_auth_token');
+        if (localCt0 && localAuth) {
+          inputCt0.value = localCt0;
+          inputAuthToken.value = localAuth;
+          verifyAndShowUser(localCt0, localAuth, false);
+        } else {
+          setCredStatus(false, '未登录 X 账号');
+        }
+      }
+    } catch (e) {
+      console.warn('获取已存凭据错误:', e);
     }
   }
 
-  async function verifyAndFetchXUser(ct0, authToken) {
+  function setCredStatus(isActive, text) {
+    credStatusIndicator.className = `status-tag ${isActive ? 'active' : 'inactive'}`;
+    credStatusText.textContent = text;
+  }
+
+  async function verifyAndShowUser(ct0, authToken, showNotification = true) {
     try {
       const res = await fetch('/api/verify-cookie', {
         method: 'POST',
@@ -201,169 +260,97 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ ct0, authToken })
       });
       const json = await res.json();
+
       if (json.success && json.user) {
-        localStorage.setItem('x_archive_user_info', JSON.stringify(json.user));
-        return json.user;
-      }
-    } catch (e) {}
-    return null;
-  }
+        setCredStatus(true, 'X 账号验证成功');
+        xAccountName.textContent = json.user.name || '已登录 X 账号';
+        xAccountHandle.textContent = `@${json.user.screen_name || 'user'}`;
+        if (json.user.avatar_url) {
+          xAccountAvatar.src = json.user.avatar_url;
+        }
 
-  // Render Verified X Profile INSIDE the Cookie Panel
-  function renderXCookieAccountBox(xUser = null) {
-    if (!xCookieAccountBox) return;
+        xCookieAccountBox.classList.remove('hidden');
+        cookieFormWrapper.classList.add('hidden');
 
-    if (xUser) {
-      xCookieAccountBox.classList.remove('hidden');
-      xAccountAvatar.src = xUser.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
-      xAccountName.textContent = xUser.name || '已登录 X 账号';
-      xAccountHandle.textContent = xUser.screen_name ? `@${xUser.screen_name}` : '@x_user';
-      
-      updateCredBadge(true);
-    } else {
-      xCookieAccountBox.classList.add('hidden');
-      updateCredBadge(false);
-    }
-  }
+        if (chkRememberCred.checked) {
+          localStorage.setItem('x_archive_ct0', ct0);
+          localStorage.setItem('x_archive_auth_token', authToken);
+        }
 
-  btnLogoutXAccount?.addEventListener('click', () => {
-    localStorage.removeItem('x_archive_ct0');
-    localStorage.removeItem('x_archive_auth_token');
-    localStorage.removeItem('x_archive_user_info');
-    inputCt0.value = '';
-    inputAuthToken.value = '';
-    renderXCookieAccountBox(null);
-    alert('已安全登出并清除 X 账号 Cookie！');
-  });
-
-  // Handle Admin Passcode Login
-  async function handleAdminLogin(e) {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    const user = loginUser.value.trim();
-    const pass = loginPass.value.trim();
-
-    if (!user || !pass) {
-      loginErrorMsg.textContent = '请输入账号与密码！';
-      loginErrorMsg.classList.remove('hidden');
-      return false;
-    }
-
-    btnSubmitLogin.disabled = true;
-    btnSubmitLogin.querySelector('span').textContent = '正在解密...';
-
-    try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: user, password: pass })
-      });
-      const json = await res.json();
-
-      btnSubmitLogin.disabled = false;
-      btnSubmitLogin.querySelector('span').textContent = '解密并进入控制台';
-
-      if (json.success && json.token) {
-        adminSessionToken = json.token;
-        localStorage.setItem('x_archive_admin_token', adminSessionToken);
-        loginErrorMsg.classList.add('hidden');
-
-        toggleGate(false);
-        renderNavAdminRight();
-        initCredentialsAndXUser();
+        if (showNotification) {
+          showToast(`✅ 成功连接 X 账号: @${json.user.screen_name}`);
+        }
       } else {
-        loginErrorMsg.textContent = `❌ ${json.error || '认证失败'}`;
-        loginErrorMsg.classList.remove('hidden');
+        setCredStatus(false, 'Cookie 已失效');
+        xCookieAccountBox.classList.add('hidden');
+        cookieFormWrapper.classList.remove('hidden');
+        if (showNotification) {
+          showToast('❌ Cookie 凭据无效或已过期');
+        }
       }
     } catch (err) {
-      btnSubmitLogin.disabled = false;
-      btnSubmitLogin.querySelector('span').textContent = '解密并进入控制台';
-      loginErrorMsg.textContent = '❌ 网络请求异常';
-      loginErrorMsg.classList.remove('hidden');
-    }
-
-    return false;
-  }
-
-  adminLoginForm?.addEventListener('submit', handleAdminLogin);
-
-  // Vault Credentials Save -> 登录 X 账号
-  function updateCredBadge(isReady) {
-    if (isReady) {
-      credStatusIndicator.className = 'status-tag active';
-      credStatusText.textContent = 'X 账号已就绪';
-    } else {
-      credStatusIndicator.className = 'status-tag inactive';
-      credStatusText.textContent = '未登录 X 账号';
+      setCredStatus(false, '验证失败');
     }
   }
 
-  vaultCookieForm?.addEventListener('submit', (e) => { e.preventDefault(); return false; });
-  
-  btnSaveCred?.addEventListener('click', async (e) => {
-    if (e) e.preventDefault();
-    let ct0 = inputCt0.value.trim().replace(/^ct0=/i, '').replace(/^["']|["']$/g, '');
-    let authToken = inputAuthToken.value.trim().replace(/^auth_token=/i, '').replace(/^["']|["']$/g, '');
-
-    if (!ct0 || !authToken) {
-      alert('请完整填写 ct0 与 auth_token！');
-      return;
-    }
-
-    if (chkRememberCred.checked) {
-      localStorage.setItem('x_archive_ct0', ct0);
-      localStorage.setItem('x_archive_auth_token', authToken);
-    }
-
-    btnSaveCred.textContent = '正在识别 X 真实身份...';
-    btnSaveCred.disabled = true;
-
-    localStorage.removeItem('x_archive_user_info');
-
-    let user = await verifyAndFetchXUser(ct0, authToken);
-    
-    if (!user) {
-      const shortId = ct0.slice(0, 6);
-      user = {
-        name: '已登录 X 账号',
-        screen_name: `user_${shortId}`,
-        avatar_url: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png'
-      };
-    }
-
-    btnSaveCred.textContent = '登录 X 账号';
-    btnSaveCred.disabled = false;
-
-    renderXCookieAccountBox(user);
-
-    alert(`🎉 登录成功！已成功识别当前 X 账号：@${user.screen_name} (${user.name})\n✨ 最新 Cookie 凭据与账号 ID 已自动加密保存至 D1 数据库，GitHub 每日定时任务静默备份已激活！`);
-  });
-
-  btnClearCred?.addEventListener('click', () => {
-    localStorage.removeItem('x_archive_ct0');
-    localStorage.removeItem('x_archive_auth_token');
-    localStorage.removeItem('x_archive_user_info');
-    inputCt0.value = '';
-    inputAuthToken.value = '';
-    renderXCookieAccountBox(null);
-    alert('已清除本地记录的 Cookie 凭据！');
-  });
-
-  // Trigger Smart Incremental Sync
-  btnTriggerSync?.addEventListener('click', async () => {
+  btnSaveCred?.addEventListener('click', async () => {
     const ct0 = inputCt0.value.trim();
     const authToken = inputAuthToken.value.trim();
 
     if (!ct0 || !authToken) {
-      alert('请先登录 X 账号（配置 ct0 与 auth_token）！');
+      showCredError('请填写完整 ct0 与 auth_token');
       return;
     }
 
+    btnSaveCred.disabled = true;
+    btnSaveCred.textContent = '校验中...';
+    credFormMsg.classList.add('hidden');
+
+    await verifyAndShowUser(ct0, authToken, true);
+
+    btnSaveCred.disabled = false;
+    btnSaveCred.textContent = '校验并登录 X';
+  });
+
+  function showCredError(msg) {
+    credFormMsg.textContent = msg;
+    credFormMsg.classList.remove('hidden');
+  }
+
+  btnLogoutXAccount?.addEventListener('click', () => {
+    inputCt0.value = '';
+    inputAuthToken.value = '';
+    localStorage.removeItem('x_archive_ct0');
+    localStorage.removeItem('x_archive_auth_token');
+    xCookieAccountBox.classList.add('hidden');
+    cookieFormWrapper.classList.remove('hidden');
+    setCredStatus(false, '未登录 X 账号');
+    showToast('已登出 X 账号凭据');
+  });
+
+  btnClearCred?.addEventListener('click', () => {
+    inputCt0.value = '';
+    inputAuthToken.value = '';
+    localStorage.removeItem('x_archive_ct0');
+    localStorage.removeItem('x_archive_auth_token');
+    credFormMsg.classList.add('hidden');
+    showToast('已清空凭据表单');
+  });
+
+  // ==================== 5. Smart Sync Engine ====================
+  btnTriggerSync?.addEventListener('click', async () => {
+    const ct0 = inputCt0.value.trim() || localStorage.getItem('x_archive_ct0');
+    const authToken = inputAuthToken.value.trim() || localStorage.getItem('x_archive_auth_token');
+
+    if (!ct0 || !authToken) {
+      showToast('⚠️ 请先配置并登录 X Cookie 凭据');
+      return;
+    }
+
+    btnTriggerSync.disabled = true;
+    syncProgressBox.classList.remove('hidden');
     terminalLogContainer.classList.remove('hidden');
-    terminalLogOutput.textContent = '> 启动智能增量同步引擎 (Smart Incremental Sync)...\n> 设置平滑防限制延迟 (1.2s~2.2s Jitter)...\n';
+    terminalLogOutput.innerHTML = `> [${new Date().toLocaleTimeString()}] 🚀 启动智能增量同步任务...\n`;
 
     try {
       const res = await fetch('/api/sync-following', {
@@ -372,130 +359,140 @@ document.addEventListener('DOMContentLoaded', () => {
           'Content-Type': 'application/json',
           'x-admin-token': adminSessionToken
         },
-        body: JSON.stringify({ ct0, authToken, forceFull: false })
+        body: JSON.stringify({ ct0, authToken })
       });
       const json = await res.json();
 
-      if (!json.success) {
-        terminalLogOutput.textContent += `> 同步失败: ${json.error}\n`;
-        return;
+      if (json.success) {
+        showToast('🚀 增量同步任务已在后台启动');
+        startPollingSyncStatus();
+      } else {
+        btnTriggerSync.disabled = false;
+        showToast(`❌ 同步失败: ${json.error}`);
+        logTerminal(`[ERROR] ${json.error}`);
       }
-
-      if (Array.isArray(json.following)) {
-        if (json.following.length > 0) {
-          localStorage.setItem('x_archive_cached_data', JSON.stringify(json.following));
-        }
-
-        let log = `> ✅ 智能同步完毕！成功抓取并备份 ${json.count || json.following.length} 位关注博主：\n\n`;
-        json.following.forEach(u => {
-          log += `> 📌 @${u.screen_name} (${u.name}) | 粉丝数: ${u.followers_count || 0}\n`;
-        });
-
-        if (json.db_saved === false) {
-          log += `\n> ⚠️ 提示: D1 数据库未绑定或未触发重新部署，已开启本地缓存双保险防护！直接打开首页即可正常全量显示！`;
-        } else {
-          log += `\n> ✨ 数据已全量永久落库 (D1 Database)！直接返回首页展示墙刷新即可全量查看！`;
-        }
-
-        terminalLogOutput.textContent = log;
-        return;
-      }
-
-      pollProgress();
     } catch (err) {
-      terminalLogOutput.textContent += `> 网络请求失败: ${err.message}\n`;
+      btnTriggerSync.disabled = false;
+      showToast('网络异常，无法连接同步服务');
     }
   });
 
-  function pollProgress() {
-    const timer = setInterval(async () => {
+  function startPollingSyncStatus() {
+    if (syncPollingInterval) clearInterval(syncPollingInterval);
+
+    syncPollingInterval = setInterval(async () => {
       try {
         const res = await fetch('/api/sync-status', {
           headers: { 'x-admin-token': adminSessionToken }
         });
         const status = await res.json();
 
-        let log = `> 智能抓取运行中... 本页捕获: ${status.current || 0} 人\n`;
-        if (status.lastItem) {
-          log += `> 最新对比提取: @${status.lastItem.screen_name} (${status.lastItem.name})\n`;
-        }
+        if (status.running) {
+          syncProgressStatusText.textContent = '抓取中 (遇到已存博主自动智能停止)...';
+          syncProgressCountText.textContent = `${status.current} 已抓取`;
+          syncProgressFill.style.width = '65%';
 
-        if (status.isIncrementalStop) {
-          log += `> [Smart Cut-off] 检测到已有数据库命中，智能打断后续无用翻页！\n`;
-        }
+          if (status.lastItem) {
+            logTerminal(`[FETCH] 抓取到: @${status.lastItem.screen_name} (${status.lastItem.name}) · 粉丝: ${status.lastItem.followers_count}`);
+          }
+        } else {
+          clearInterval(syncPollingInterval);
+          btnTriggerSync.disabled = false;
+          syncProgressFill.style.width = '100%';
 
-        terminalLogOutput.textContent = log;
-
-        if (!status.running) {
-          clearInterval(timer);
           if (status.error) {
-            terminalLogOutput.textContent += `> 任务异常中断: ${status.error}\n`;
+            syncProgressStatusText.textContent = `同步异常中断: ${status.error}`;
+            logTerminal(`[ERROR] 任务失败: ${status.error}`);
+            showToast(`❌ 同步中断: ${status.error}`);
           } else {
-            terminalLogOutput.textContent += `> ✅ 智能增量同步完毕！本次新增 ${status.newFetched || 0} 位关注，总库合体 ${status.total || 0} 位。\n`;
-            
-            initCredentialsAndXUser();
-
-            alert(`🎉 增量同步完成！本次成功补充 ${status.newFetched || 0} 名新关注博主，前往首页刷新查看！`);
+            syncProgressStatusText.textContent = `✅ 同步完成！新增 ${status.newFetched || 0} 位博主，当前总计 ${status.total || 0} 位`;
+            syncProgressCountText.textContent = `${status.total || 0} 总数`;
+            logTerminal(`[SUCCESS] 增量同步结束！本次抓取新增 ${status.newFetched || 0} 人，数据库总计 ${status.total || 0} 人。`);
+            showToast(`✅ 同步完成！新增 ${status.newFetched || 0} 位博主`);
           }
         }
-      } catch (e) {
-        clearInterval(timer);
+      } catch (err) {
+        clearInterval(syncPollingInterval);
+        btnTriggerSync.disabled = false;
       }
-    }, 1000);
+    }, 1500);
   }
 
-  // Backup Export & Reset
+  function logTerminal(msg) {
+    terminalLogOutput.innerHTML += `> ${escapeHtml(msg)}\n`;
+    terminalLogOutput.scrollTop = terminalLogOutput.scrollHeight;
+  }
+
+  // ==================== 6. Backup Export, Restore & Reset ====================
   btnExportJson?.addEventListener('click', async () => {
     try {
       const res = await fetch('/api/archive');
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(json.data, null, 2));
-        const anchor = document.createElement('a');
-        anchor.setAttribute("href", dataStr);
-        anchor.setAttribute("download", `x_archive_backup_${new Date().toISOString().slice(0,10)}.json`);
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-      } else {
-        alert('暂无可导出的博主数据！');
+
+      if (json.success && Array.isArray(json.data)) {
+        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(json.data, null, 2));
+        const downloadAnchor = document.createElement('a');
+        const timestamp = new Date().toISOString().slice(0, 10);
+        downloadAnchor.setAttribute('href', dataStr);
+        downloadAnchor.setAttribute('download', `x_archive_backup_${timestamp}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        showToast(`✅ 已导出 ${json.data.length} 条博主归档数据`);
       }
     } catch (e) {
-      alert('导出失败！');
+      showToast('❌ 导出备份失败');
     }
   });
 
-  btnImportJson?.addEventListener('click', () => fileInputBackup.click());
+  btnImportJson?.addEventListener('click', () => {
+    fileInputBackup.click();
+  });
 
   fileInputBackup?.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (evt) => {
+    reader.onload = async (event) => {
       try {
-        const parsed = JSON.parse(evt.target.result);
-        if (Array.isArray(parsed)) {
-          await fetch('/api/archive', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-admin-token': adminSessionToken
-            },
-            body: JSON.stringify({ data: parsed })
-          });
-          alert(`成功导入 ${parsed.length} 条博主数据！`);
+        const data = JSON.parse(event.target.result);
+        if (!Array.isArray(data)) {
+          showToast('❌ 备份文件格式错误，需为 JSON 数组');
+          return;
+        }
+
+        const confirmRestore = confirm(`确认从备份文件导入 ${data.length} 位博主数据并覆盖当前数据库吗？`);
+        if (!confirmRestore) return;
+
+        const res = await fetch('/api/archive', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-token': adminSessionToken
+          },
+          body: JSON.stringify({ data })
+        });
+        const resJson = await res.json();
+
+        if (resJson.success) {
+          showToast(`✅ 成功导入并还原 ${data.length} 条博主数据`);
+        } else {
+          showToast(`❌ 导入失败: ${resJson.error}`);
         }
       } catch (err) {
-        alert('JSON 格式损坏！');
+        showToast('❌ 解析备份 JSON 失败');
       }
     };
     reader.readAsText(file);
   });
 
   btnResetDb?.addEventListener('click', async () => {
-    if (confirm('确定要清空所有归档博主数据吗？此操作不可撤销！')) {
-      await fetch('/api/archive', {
+    const pwd = prompt('⚠️ 警告：该操作将清空本地所有已归档博主！请输入 "RESET" 确认：');
+    if (pwd !== 'RESET') return;
+
+    try {
+      const res = await fetch('/api/archive', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -503,27 +500,79 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         body: JSON.stringify({ data: [] })
       });
-      alert('数据库已清空！');
+      const json = await res.json();
+      if (json.success) {
+        showToast('🗑️ 数据库已清空重置');
+      }
+    } catch (e) {
+      showToast('重置失败');
     }
   });
 
-  // Modal Console Script
-  btnShowConsoleHelper?.addEventListener('click', async () => {
-    try {
-      const res = await fetch('/helper-script.js');
-      modalScriptCode.textContent = await res.text();
-      modalScript.classList.remove('hidden');
-    } catch (e) {
-      modalScriptCode.textContent = '读取脚本失败。';
-      modalScript.classList.remove('hidden');
+  // ==================== 7. Console Helper Script Modal ====================
+  const helperScriptCode = `(async function() {
+  console.log("🚀 开始抓取关注博主数据...");
+  // 提取当前页面博主
+  const users = [];
+  document.querySelectorAll('[data-testid="UserCell"]').forEach(cell => {
+    const nameEl = cell.querySelector('div[dir="ltr"] span');
+    const handleEl = cell.querySelector('a[href^="/"]');
+    if (nameEl && handleEl) {
+      users.push({
+        name: nameEl.textContent,
+        screen_name: handleEl.getAttribute('href').replace('/', '')
+      });
     }
+  });
+  console.log("✅ 抓取到 " + users.length + " 位博主");
+  console.save(users, "x_followings.json");
+})();`;
+
+  btnShowConsoleHelper?.addEventListener('click', () => {
+    modalScriptCode.textContent = helperScriptCode;
+    modalScript.classList.remove('hidden');
+  });
+
+  document.querySelectorAll('.btn-close-modal').forEach(btn => {
+    btn.addEventListener('click', () => modalScript.classList.add('hidden'));
   });
 
   btnCopyCode?.addEventListener('click', () => {
-    navigator.clipboard.writeText(modalScriptCode.textContent).then(() => {
-      alert('脚本代码已成功复制到剪贴板！');
-    });
+    navigator.clipboard.writeText(helperScriptCode);
+    showToast('📋 已复制助手脚本到剪贴板');
   });
 
-  checkAdminAuth();
+  // ==================== 8. Toast Notifications ====================
+  function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-item';
+    toast.innerHTML = `
+      <span style="color: var(--accent-primary);">✦</span>
+      <span>${escapeHtml(message)}</span>
+    `;
+
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(10px)';
+      toast.style.transition = 'all 0.2s ease';
+      setTimeout(() => toast.remove(), 220);
+    }, 2400);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    })[m]);
+  }
+
+  // Initialize Admin Session
+  checkAdminSession();
+
 });

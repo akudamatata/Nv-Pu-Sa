@@ -21,14 +21,13 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// 路由：全新 v2 独立 UI 页面
+// 路由兼容：旧 /v2 路径自动重定向至主站
 app.get('/v2', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'v2', 'index.html'));
+  res.redirect('/');
 });
 
-// 路由：全新 v2 独立管理后台页面
 app.get(['/v2/admin', '/admin/v2'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'v2', 'admin.html'));
+  res.redirect('/admin');
 });
 
 const DATA_DIR = path.join(__dirname, 'data');
