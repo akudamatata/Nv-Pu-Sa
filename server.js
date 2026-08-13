@@ -148,6 +148,26 @@ app.post('/api/archive', requireAdmin, (req, res) => {
   res.json({ success: true, count: data.length });
 });
 
+// 清空/重置 D1 数据库 API (受保护，兼容本地与 Cloudflare D1 模式)
+app.post('/api/admin/reset-d1', requireAdmin, (req, res) => {
+  const { clearCredentials = false } = req.body || {};
+  saveArchivedData([]);
+  if (clearCredentials) {
+    saveCredentials({ ct0: '', authToken: '', user_id: '' });
+  }
+  res.json({
+    success: true,
+    message: 'Cloudflare D1 数据库已成功清理重置！',
+    cleared: { bloggers: true, credentials: clearCredentials }
+  });
+});
+
+// 删除清空归档数据 (受保护)
+app.delete('/api/archive', requireAdmin, (req, res) => {
+  saveArchivedData([]);
+  res.json({ success: true, message: '数据库已清空' });
+});
+
 // 校验 Cookie 是否有效 (受保护)
 app.post('/api/verify-cookie', requireAdmin, async (req, res) => {
   const { authToken, ct0 } = req.body;
