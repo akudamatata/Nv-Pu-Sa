@@ -206,6 +206,8 @@ export async function onRequestGet({ env }) {
       if (!foundEntries) hasMore = false;
     }
 
+    const newUsers = fetchedUsers.filter(u => !existingMap.has(u.screen_name.toLowerCase()));
+
     if (fetchedUsers.length > 0) {
       await db.prepare(`
         CREATE TABLE IF NOT EXISTS bloggers (
@@ -244,11 +246,22 @@ export async function onRequestGet({ env }) {
       await db.batch(batch);
     }
 
+    let totalDbCount = 0;
+    try {
+      const countRes = await db.prepare(`SELECT COUNT(*) as total FROM bloggers`).first();
+      if (countRes) totalDbCount = countRes.total || 0;
+    } catch (e) {}
+
     return Response.json({
       cron_status: 'success',
       timestamp: new Date().toISOString(),
-      count: fetchedUsers.length,
-      message: `自动 Cron 定时同步成功！已自动更新备份 ${fetchedUsers.length} 位关注博主`
+      scanned_count: fetchedUsers.length,
+      new_count: newUsers.length,
+      is_incremental_stop: isIncrementalStop,
+      total_db_count: totalDbCount,
+      message: isIncrementalStop && newUsers.length === 0
+        ? `自动 Cron 增量核对完成！数据已是最新，无新增博主。(库中总计 ${totalDbCount} 人)`
+        : `自动 Cron 定时同步成功！成功增量备份 ${newUsers.length} 位新关注博主。(库中总计 ${totalDbCount} 人)`
     });
 
   } catch (err) {
