@@ -422,8 +422,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     btnTriggerSync.disabled = true;
-    syncProgressBox.classList.remove('hidden');
-    terminalLogContainer.classList.remove('hidden');
+    syncProgressStatusText.textContent = '🚀 正在连接 X 接口并增量同步...';
+    syncProgressCountText.textContent = '请求中';
+    syncProgressFill.style.width = '35%';
     terminalLogOutput.innerHTML = `> [${new Date().toLocaleTimeString()}] 🚀 启动智能增量同步任务...\n`;
 
     try {

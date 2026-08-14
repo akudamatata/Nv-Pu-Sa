@@ -250,14 +250,14 @@
               </button>
             </div>
 
-            <!-- Sync Live Progress Bar -->
-            <div id="sync-progress-box" class="sync-progress-box hidden">
+            <!-- Sync Live Progress Bar (Permanently docked to eliminate layout shifting) -->
+            <div id="sync-progress-box" class="sync-progress-box">
               <div class="sync-progress-header">
-                <span id="sync-progress-status-text">同步进行中...</span>
-                <span id="sync-progress-count-text" style="font-family: var(--font-mono); color: var(--accent-primary);">0 / 0</span>
+                <span id="sync-progress-status-text">⚡ 增量同步引擎待命中</span>
+                <span id="sync-progress-count-text" style="font-family: var(--font-mono); color: var(--text-muted);">准备就绪</span>
               </div>
               <div class="sync-progress-track">
-                <div id="sync-progress-fill" class="sync-progress-fill"></div>
+                <div id="sync-progress-fill" class="sync-progress-fill" style="width: 0%;"></div>
               </div>
             </div>
 

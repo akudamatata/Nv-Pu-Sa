@@ -2342,11 +2342,12 @@ code, kbd {
 }
 
 .sync-progress-box {
-  margin-top: 16px;
-  padding: 16px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-medium);
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
+  transition: all 0.25s ease;
 }
 
 .sync-progress-header {
@@ -2360,8 +2361,8 @@ code, kbd {
 
 .sync-progress-track {
   width: 100%;
-  height: 8px;
-  background: var(--bg-chip);
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-full);
   overflow: hidden;
 }
@@ -2371,11 +2372,11 @@ code, kbd {
   width: 0%;
   background: linear-gradient(90deg, var(--accent-primary), var(--accent-gold));
   border-radius: var(--radius-full);
-  transition: width 0.3s ease;
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .terminal-log-box.is-expanded {
-  margin-top: 20px;
+  margin-top: 14px;
   background: rgba(0, 0, 0, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
