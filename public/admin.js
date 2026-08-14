@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (json.success && json.hasCredentials) {
         inputCt0.value = json.ct0 || '';
         inputAuthToken.value = json.authToken || '';
-        setCredStatus(true, '已保存 Cookie 凭据');
+        setCredStatus(true, '已保存登录凭据');
         await verifyAndShowUser(json.ct0, json.authToken, false);
       } else {
         // Fallback to local storage if remembered
