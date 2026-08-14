@@ -319,6 +319,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function resolveMediaUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('/api/media') || url.startsWith('data:') || url.startsWith('/')) {
+      return url;
+    }
+    if (url.includes('twimg.com')) {
+      return `/api/media?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  }
+
   async function verifyAndShowUser(ct0, authToken, showNotification = true) {
     try {
       const res = await fetch('/api/verify-cookie', {
@@ -338,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         xAccountName.textContent = json.user.name || '已登录 X 账号';
         xAccountHandle.textContent = `@${json.user.screen_name || 'user'}`;
         if (json.user.avatar_url) {
-          xAccountAvatar.src = json.user.avatar_url;
+          xAccountAvatar.src = resolveMediaUrl(json.user.avatar_url);
         }
 
         xCookieAccountBox.classList.remove('hidden');

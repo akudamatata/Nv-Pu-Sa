@@ -74,6 +74,25 @@ export async function onRequestPost({ request, env }) {
       }
     } catch (e) {}
 
+    // 将当前登录账号的高清头像转存至 Cloudflare R2 存储桶
+    const bucket = env.BUCKET || env.R2 || env.MEDIA_BUCKET || env.x_archive_media || env['x-archive-media'] || null;
+    if (bucket && avatar_url && avatar_url.startsWith('http')) {
+      const avatarKey = `avatars/${screen_name}_400x400.jpg`;
+      try {
+        const aRes = await fetch(avatar_url, { signal: AbortSignal.timeout(6000) });
+        if (aRes.ok) {
+          const aBuf = await aRes.arrayBuffer();
+          await bucket.put(avatarKey, aBuf, {
+            httpMetadata: {
+              contentType: 'image/jpeg',
+              cacheControl: 'public, max-age=31536000, immutable'
+            }
+          });
+          avatar_url = `/api/media?key=${encodeURIComponent(avatarKey)}`;
+        }
+      } catch (e) {}
+    }
+
     const targetUserId = user_id || '1701615602862092288';
 
     // 将验证成功的 Cookie 凭据、user_id 与用户资料一并安全保存至 D1 数据库中
