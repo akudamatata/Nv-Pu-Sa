@@ -112,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Backup & Restore
   const btnExportJson = document.getElementById('btn-export-json');
   const btnImportJson = document.getElementById('btn-import-json');
-  const btnResetDb = document.getElementById('btn-reset-db');
   const btnResetD1 = document.getElementById('btn-reset-d1');
   const fileInputBackup = document.getElementById('file-input-backup');
 
@@ -509,67 +508,33 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.readAsText(file);
   });
 
-  // 一键清理 Cloudflare D1 边缘数据库
+  // 清空博主归档数据（仅清理博主，保留 X 登录凭据）
   btnResetD1?.addEventListener('click', async () => {
-    const confirmed = confirm('⚠️ 确认一键清空 Cloudflare D1 数据库中的所有已归档博主吗？\n\n（此操作将从 Cloudflare D1 边缘表中执行 DELETE FROM bloggers，无法撤销）');
+    const confirmed = confirm('确认清空所有已归档的博主数据吗？\n\n此操作不会影响已保存的 X 登录凭据。');
     if (!confirmed) return;
 
-    const clearCredPrompt = confirm('是否同时重置/注销保存在 D1 中的 X 账号凭据？\n\n【确定】= 清空博主 + 注销凭据\n【取消】= 仅清空博主数据，保留 X 凭据');
-
     try {
-      logTerminal('[D1 RESET] 正在向 Cloudflare D1 发送数据库清理指令...');
+      logTerminal('[RESET] 正在清空博主归档数据...');
       const res = await fetch('/api/admin/reset-d1', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-admin-token': adminSessionToken
         },
-        body: JSON.stringify({ clearCredentials: clearCredPrompt })
+        body: JSON.stringify({ clearCredentials: false })
       });
       const json = await res.json();
 
       if (json.success) {
-        logTerminal(`[D1 SUCCESS] ✅ ${json.message || 'Cloudflare D1 数据库已清空重置'}`);
-        showToast('🗑️ Cloudflare D1 数据库已成功清理！');
-        if (clearCredPrompt) {
-          xCookieAccountBox.classList.add('hidden');
-          cookieFormWrapper.classList.remove('hidden');
-          credStatusIndicator.className = 'status-tag inactive';
-          credStatusText.textContent = '未登录 X 账号';
-        }
+        logTerminal('[RESET] ✅ 博主归档数据已清空');
+        showToast('✅ 博主归档数据已成功清空！');
       } else {
-        logTerminal(`[D1 ERROR] ❌ 清理失败: ${json.error}`);
-        showToast(`❌ D1 清理失败: ${json.error}`);
+        logTerminal(`[RESET ERROR] ❌ 清理失败: ${json.error}`);
+        showToast(`❌ 清理失败: ${json.error}`);
       }
     } catch (e) {
-      logTerminal(`[D1 ERROR] ❌ 请求异常: ${e.message}`);
-      showToast('❌ 请求 D1 数据库清理异常');
-    }
-  });
-
-  // 重置本地归档数据库
-  btnResetDb?.addEventListener('click', async () => {
-    const pwd = prompt('⚠️ 警告：该操作将清空本地所有已归档博主！请输入 "RESET" 确认：');
-    if (pwd !== 'RESET') return;
-
-    try {
-      logTerminal('[LOCAL RESET] 正在重置清空本地博主数据...');
-      const res = await fetch('/api/archive', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-token': adminSessionToken
-        },
-        body: JSON.stringify({ data: [] })
-      });
-      const json = await res.json();
-      if (json.success) {
-        logTerminal('[LOCAL SUCCESS] ✅ 本地博主数据库已清空重置');
-        showToast('🗑️ 本地归档数据库已清空重置');
-      }
-    } catch (e) {
-      logTerminal(`[LOCAL ERROR] ❌ 重置失败: ${e.message}`);
-      showToast('❌ 本地数据库重置失败');
+      logTerminal(`[RESET ERROR] ❌ 请求异常: ${e.message}`);
+      showToast('❌ 清理请求异常');
     }
   });
 

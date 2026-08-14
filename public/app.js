@@ -465,8 +465,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/archive');
       const json = await res.json();
 
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.success && Array.isArray(json.data)) {
         state.rawUsers = json.data;
+        if (json.data.length > 0) {
+          localStorage.setItem('x_archive_cached_data', JSON.stringify(json.data));
+        } else {
+          localStorage.removeItem('x_archive_cached_data');
+        }
       } else {
         fallbackToLocalStorage();
       }
