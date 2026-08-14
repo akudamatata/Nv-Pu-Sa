@@ -126,19 +126,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const hudValCred = document.getElementById('hud-val-cred');
   const hudDotCred = document.getElementById('hud-dot-cred');
   const hudValCount = document.getElementById('hud-val-count');
+  const hudD1Latency = document.getElementById('hud-d1-latency');
 
   let adminSessionToken = localStorage.getItem('x_archive_admin_token') || '';
   let syncPollingInterval = null;
 
   async function updateHudArchiveCount() {
+    const startTime = performance.now();
     try {
       const res = await fetch('/api/archive');
+      const latencyMs = Math.round(performance.now() - startTime);
       const json = await res.json();
+
       if (json.success && Array.isArray(json.data)) {
         if (hudValCount) hudValCount.textContent = `${json.data.length} 位博主`;
       }
+
+      if (hudD1Latency) {
+        if (latencyMs < 120) {
+          hudD1Latency.className = 'hud-latency-pill fast';
+        } else if (latencyMs < 350) {
+          hudD1Latency.className = 'hud-latency-pill normal';
+        } else {
+          hudD1Latency.className = 'hud-latency-pill slow';
+        }
+        hudD1Latency.textContent = `⚡ ${latencyMs}ms`;
+      }
     } catch (e) {
-      // ignore
+      if (hudD1Latency) {
+        hudD1Latency.className = 'hud-latency-pill error';
+        hudD1Latency.textContent = '⚡ 离线';
+      }
     }
   }
 
@@ -676,7 +694,12 @@ document.addEventListener('DOMContentLoaded', () => {
     })[m]);
   }
 
-  // Initialize Admin Session
+  // Initialize Admin Session & Realtime Latency Heartbeat
   checkAdminSession();
+  setInterval(() => {
+    if (adminSessionToken && !adminDashboardScreen.classList.contains('hidden')) {
+      updateHudArchiveCount();
+    }
+  }, 15000);
 
 });

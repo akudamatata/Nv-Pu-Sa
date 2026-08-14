@@ -1999,6 +1999,44 @@ code, kbd {
   box-shadow: 0 0 8px var(--accent-danger);
 }
 
+.hud-latency-pill {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  letter-spacing: -0.01em;
+  transition: all 0.25s ease;
+}
+
+.hud-latency-pill.fast {
+  background: hsla(152, 69%, 45%, 0.15);
+  color: var(--accent-success);
+  border: 1px solid hsla(152, 69%, 45%, 0.35);
+  box-shadow: 0 0 8px hsla(152, 69%, 45%, 0.2);
+}
+
+.hud-latency-pill.normal {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-gold);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.hud-latency-pill.slow {
+  background: rgba(244, 63, 94, 0.15);
+  color: var(--accent-danger);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+}
+
+.hud-latency-pill.error {
+  background: hsla(0, 0%, 100%, 0.08);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
 /* 62% : 38% 黄金分割 Executive Bento Grid */
 .admin-bento-grid {
   display: grid;
