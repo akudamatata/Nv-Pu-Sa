@@ -974,21 +974,30 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function finalizeRouletteWinner(user) {
-    renderRouletteCardPreview(user, true);
-    rouletteCardContainer.classList.remove('is-shuffling');
-    rouletteCardContainer.classList.add('is-settled');
-    state.isShuffling = false;
+    // 1. 倒数第二张卡片顺着滚轮惯性向上平滑滚出 (140ms)
+    rouletteCardContainer.classList.add('is-rolling-out');
 
-    // Trigger Luxury Celebration Fireworks & Starburst Burst around the winning card
-    triggerLuxuryCelebrationFireworks(rouletteCardContainer);
-
-    // Reveal outside action buttons gracefully upon complete stop
     setTimeout(() => {
-      rouletteOutsideActions?.classList.add('is-visible');
-      rouletteDismissHint?.classList.add('is-visible');
-    }, 140);
+      // 2. 注入获胜博主数据
+      renderRouletteCardPreview(user, true);
 
-    showToast(`抽取命中：@${user.screen_name}`);
+      // 3. 移除滚出状态，触发最终卡片从下方滑入 + 拟真弹性卡扣回弹落定 (Spring Bounce)
+      rouletteCardContainer.classList.remove('is-rolling-out', 'is-shuffling');
+      void rouletteCardContainer.offsetWidth; // 强制触发 CSS 关键帧重绘
+      rouletteCardContainer.classList.add('is-settled');
+      state.isShuffling = false;
+
+      // 4. 触发金色粒子爆破与星芒礼花
+      triggerLuxuryCelebrationFireworks(rouletteCardContainer);
+
+      // 5. 平滑展现底部操作栏
+      setTimeout(() => {
+        rouletteOutsideActions?.classList.add('is-visible');
+        rouletteDismissHint?.classList.add('is-visible');
+      }, 160);
+
+      showToast(`抽取命中：@${user.screen_name}`);
+    }, 140);
   }
 
   function closeRouletteModal() {

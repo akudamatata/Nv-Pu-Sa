@@ -1567,28 +1567,52 @@ code, kbd {
   border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: 0 0 50px -10px rgba(56, 189, 248, 0.25), 0 25px 60px -15px rgba(0,0,0,0.9);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.15s ease, border-color 0.25s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.15s ease, border-color 0.25s ease, opacity 0.16s ease;
+  will-change: transform, opacity, filter;
 }
 
 .roulette-floating-card.is-shuffling {
-  filter: blur(2px);
-  transform: scale(0.98);
+  filter: blur(1.5px);
+  transform: scale(0.985);
   border-color: var(--accent-spark);
 }
 
+/* 倒数第二张顺着惯性向上滚出 */
+.roulette-floating-card.is-rolling-out {
+  opacity: 0.15;
+  filter: blur(3.5px);
+  transform: translateY(-34px) scale(0.96);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 1, 1), opacity 0.15s ease, filter 0.15s ease;
+}
+
+/* 最终卡片：从下方顺滑滑入 + 拟真弹性卡扣回弹落定 (Spring Bounce) */
 .roulette-floating-card.is-settled {
   filter: blur(0px);
-  transform: scale(1);
-  animation: settleBounceSpring 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  animation: settleSlotReelSpring 0.58s cubic-bezier(0.22, 1.25, 0.36, 1) both;
   border-color: var(--accent-gold);
   box-shadow: 0 0 60px 8px rgba(245, 158, 11, 0.45), 0 0 100px 20px rgba(56, 189, 248, 0.25), 0 30px 70px -10px rgba(0,0,0,0.95);
 }
 
-@keyframes settleBounceSpring {
-  0% { transform: scale(0.95); }
-  50% { transform: scale(1.04); }
-  75% { transform: scale(0.99); }
-  100% { transform: scale(1); }
+@keyframes settleSlotReelSpring {
+  0% {
+    transform: translateY(32px) scale(0.96);
+    opacity: 0.3;
+    filter: blur(2px);
+  }
+  45% {
+    transform: translateY(-8px) scale(1.035);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  75% {
+    transform: translateY(2.5px) scale(0.995);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
 .roulette-banner {
