@@ -631,19 +631,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     state.filteredUsers.sort((a, b) => {
-      if (state.currentSort === 'followers-desc') {
-        return (b.followers_count || 0) - (a.followers_count || 0);
-      } else if (state.currentSort === 'followers-asc') {
-        return (a.followers_count || 0) - (b.followers_count || 0);
-      } else if (state.currentSort === 'name-asc') {
-        return (a.name || a.screen_name).localeCompare(b.name || b.screen_name);
-      } else if (state.currentSort === 'recent' || state.currentFilter === 'recent') {
+      if (state.currentSort === 'recent' || state.currentFilter === 'recent') {
         const timeA = a.backed_up_at ? new Date(a.backed_up_at).getTime() : 0;
         const timeB = b.backed_up_at ? new Date(b.backed_up_at).getTime() : 0;
         if (!isNaN(timeA) && !isNaN(timeB) && timeA !== timeB) {
           return timeB - timeA;
         }
         return (b.id || '').toString().localeCompare((a.id || '').toString());
+      } else if (state.currentSort === 'followers-desc') {
+        return (b.followers_count || 0) - (a.followers_count || 0);
+      } else if (state.currentSort === 'followers-asc') {
+        return (a.followers_count || 0) - (b.followers_count || 0);
+      } else if (state.currentSort === 'name-asc') {
+        return (a.name || a.screen_name).localeCompare(b.name || b.screen_name);
       }
       return 0;
     });
@@ -654,6 +654,16 @@ document.addEventListener('DOMContentLoaded', () => {
     state.renderedCount = 0;
     initMasonryStructure();
     renderMoreCards();
+  }
+
+  function setSortMenuSelection(sortVal, sortText) {
+    state.currentSort = sortVal;
+    if (sortCurrentText) sortCurrentText.textContent = sortText;
+    sortMenuItems.forEach(item => {
+      const match = item.getAttribute('data-val') === sortVal;
+      item.classList.toggle('active', match);
+      item.querySelector('.check-icon')?.classList.toggle('hidden', !match);
+    });
   }
 
   globalSearch?.addEventListener('input', (e) => {
@@ -675,6 +685,12 @@ document.addEventListener('DOMContentLoaded', () => {
       filterPills.forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       state.currentFilter = pill.getAttribute('data-filter');
+
+      // 点击“最新归档”时，自动联动切换右侧排序为“归档时间最近”
+      if (state.currentFilter === 'recent') {
+        setSortMenuSelection('recent', '归档时间最近');
+      }
+
       applyFilterAndSort();
     });
   });
@@ -686,6 +702,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchClearBtn.classList.add('hidden');
     state.currentFilter = 'all';
     filterPills.forEach(p => p.classList.toggle('active', p.getAttribute('data-filter') === 'all'));
+    setSortMenuSelection('followers-desc', '粉丝数从高到低');
     applyFilterAndSort();
     showToast('已重置所有筛选条件');
   });
@@ -700,16 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const val = item.getAttribute('data-val');
       const txt = item.querySelector('span').textContent;
 
-      sortMenuItems.forEach(i => {
-        i.classList.remove('active');
-        i.querySelector('.check-icon')?.classList.add('hidden');
-      });
-
-      item.classList.add('active');
-      item.querySelector('.check-icon')?.classList.remove('hidden');
-
-      sortCurrentText.textContent = txt;
-      state.currentSort = val;
+      setSortMenuSelection(val, txt);
       sortMenu.classList.add('hidden');
       applyFilterAndSort();
     });
