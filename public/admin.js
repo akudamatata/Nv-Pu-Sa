@@ -122,8 +122,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCopyCode = document.getElementById('btn-copy-code');
   const toastContainer = document.getElementById('toast-container');
 
+  // Top HUD Ribbon Elements
+  const hudValCred = document.getElementById('hud-val-cred');
+  const hudDotCred = document.getElementById('hud-dot-cred');
+  const hudValCount = document.getElementById('hud-val-count');
+
   let adminSessionToken = localStorage.getItem('x_archive_admin_token') || '';
   let syncPollingInterval = null;
+
+  async function updateHudArchiveCount() {
+    try {
+      const res = await fetch('/api/archive');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        if (hudValCount) hudValCount.textContent = `${json.data.length} 位博主`;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
 
   // ==================== 3. Admin Auth & Session Gate ====================
   async function checkAdminSession() {
@@ -135,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 乐观渲染：token 存在时先直接显示 dashboard，避免登录界面闪烁
     showGate(false);
     btnAdminLogout.classList.remove('hidden');
+    updateHudArchiveCount();
 
     try {
       const res = await fetch('/api/admin/check', {
@@ -164,6 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
       authGateScreen.classList.add('hidden');
       adminDashboardScreen.classList.remove('hidden');
       btnAdminLogout?.classList.remove('hidden');
+      updateHudArchiveCount();
     }
   }
 
@@ -193,6 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnAdminLogout.classList.remove('hidden');
         showToast('🔓 通行鉴权成功，已进入控制台');
         initCredentials();
+        updateHudArchiveCount();
       } else {
         authCardBox.classList.add('shake-error');
         setTimeout(() => authCardBox.classList.remove('shake-error'), 500);
@@ -256,9 +276,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function setCredStatus(isActive, text) {
-    credStatusIndicator.className = `status-tag ${isActive ? 'active' : 'inactive'}`;
-    credStatusText.textContent = text;
+  function setCredStatus(isActive, text, handle = '') {
+    if (credStatusIndicator) {
+      credStatusIndicator.className = `status-tag ${isActive ? 'active' : 'inactive'}`;
+    }
+    if (credStatusText) credStatusText.textContent = text;
+
+    if (hudValCred) {
+      hudValCred.textContent = isActive ? (handle ? `@${handle} · 凭据就绪` : '已连接 X 账号') : '未登录 X 账号';
+    }
+    if (hudDotCred) {
+      hudDotCred.className = `hud-badge-dot ${isActive ? 'active' : 'inactive'}`;
+    }
   }
 
   async function verifyAndShowUser(ct0, authToken, showNotification = true) {
@@ -276,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
       credLoadingSkeleton?.classList.add('hidden');
 
       if (json.success && json.user) {
-        setCredStatus(true, 'X 账号验证成功');
+        setCredStatus(true, 'X 账号验证成功', json.user.screen_name);
         xAccountName.textContent = json.user.name || '已登录 X 账号';
         xAccountHandle.textContent = `@${json.user.screen_name || 'user'}`;
         if (json.user.avatar_url) {
@@ -410,6 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
             syncProgressCountText.textContent = `新增 ${newUsers.length} 人`;
             showToast(`✅ 同步完成！新增 ${newUsers.length} 位博主 (总计 ${totalDbCount} 人)`);
           }
+          updateHudArchiveCount();
           return;
         }
 
@@ -459,6 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
             syncProgressCountText.textContent = `${status.total || 0} 总数`;
             logTerminal(`[SUCCESS] 增量同步结束！本次抓取新增 ${status.newFetched || 0} 人，数据库总计 ${status.total || 0} 人。`);
             showToast(`✅ 同步完成！新增 ${status.newFetched || 0} 位博主`);
+            updateHudArchiveCount();
           }
         }
       } catch (err) {
@@ -469,7 +500,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function logTerminal(msg) {
-    terminalLogOutput.innerHTML += `> ${escapeHtml(msg)}\n`;
+    const safe = escapeHtml(msg);
+    let lineHtml = safe;
+    if (safe.includes('[SUCCESS]')) {
+      lineHtml = `<span class="terminal-line-success">${safe}</span>`;
+    } else if (safe.includes('[ERROR]') || safe.includes('[RESET ERROR]')) {
+      lineHtml = `<span class="terminal-line-error">${safe}</span>`;
+    } else if (safe.includes('[WARN]')) {
+      lineHtml = `<span class="terminal-line-warn">${safe}</span>`;
+    } else if (safe.includes('[NEW]') || safe.includes('[CHECK]')) {
+      lineHtml = `<span class="terminal-line-info">${safe}</span>`;
+    } else if (safe.includes('[FETCH]')) {
+      lineHtml = `<span class="terminal-line-fetch">${safe}</span>`;
+    }
+    terminalLogOutput.innerHTML += `> ${lineHtml}\n`;
     terminalLogOutput.scrollTop = terminalLogOutput.scrollHeight;
   }
 
@@ -527,6 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (resJson.success) {
           showToast(`✅ 成功导入并还原 ${data.length} 条博主数据`);
+          updateHudArchiveCount();
         } else {
           showToast(`❌ 导入失败: ${resJson.error}`);
         }
@@ -557,6 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (json.success) {
         logTerminal('[RESET] ✅ 博主归档数据已清空');
         showToast('✅ 博主归档数据已成功清空！');
+        updateHudArchiveCount();
       } else {
         logTerminal(`[RESET ERROR] ❌ 清理失败: ${json.error}`);
         showToast(`❌ 清理失败: ${json.error}`);
