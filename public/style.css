@@ -545,14 +545,14 @@ code, kbd {
 }
 
 .hero-section {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   background: var(--bg-surface);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  padding: 56px 60px;
-  min-height: calc(100vh - 120px);
+  padding: 38px 46px;
+  min-height: 280px;
   position: relative;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
@@ -707,12 +707,12 @@ code, kbd {
   backdrop-filter: blur(24px);
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-lg);
-  padding: 22px 24px;
+  padding: 20px 22px;
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 220px;
+  height: 200px;
   box-shadow: var(--shadow-md);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
   overflow: hidden;
