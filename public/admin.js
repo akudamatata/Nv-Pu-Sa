@@ -131,6 +131,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // 乐观渲染：token 存在时先直接显示 dashboard，避免登录界面闪烁
+    showGate(false);
+    btnAdminLogout.classList.remove('hidden');
+
     try {
       const res = await fetch('/api/admin/check', {
         method: 'POST',
@@ -141,14 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const json = await res.json();
       if (json.authenticated) {
-        showGate(false);
-        btnAdminLogout.classList.remove('hidden');
         initCredentials();
       } else {
         performLogout();
       }
     } catch (e) {
-      showGate(true);
+      performLogout();
     }
   }
 
