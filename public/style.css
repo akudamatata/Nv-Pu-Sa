@@ -2104,6 +2104,10 @@ code, kbd {
   color: var(--text-muted);
 }
 
+#panel-credentials .panel-header-line .status-tag {
+  margin-right: 18px;
+}
+
 .tag-dot {
   width: 6px;
   height: 6px;
