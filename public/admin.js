@@ -82,7 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSubmitLogin = document.getElementById('btn-submit-login');
   const btnAdminLogout = document.getElementById('btn-admin-logout');
 
-  // X Account Card & Form
+  // X Account Card & Form & Loading Skeleton
+  const credLoadingSkeleton = document.getElementById('cred-loading-skeleton');
   const xCookieAccountBox = document.getElementById('x-cookie-account-box');
   const xAccountAvatar = document.getElementById('x-account-avatar');
   const xAccountName = document.getElementById('x-account-name');
@@ -218,6 +219,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ==================== 4. X Cookie Credentials Management ====================
   async function initCredentials() {
+    // 隐藏状态和表单，展示质感加载骨架屏遮罩
+    credLoadingSkeleton?.classList.remove('hidden');
+    xCookieAccountBox?.classList.add('hidden');
+    cookieFormWrapper?.classList.add('hidden');
+
     try {
       const res = await fetch('/api/admin/credentials', {
         headers: { 'x-admin-token': adminSessionToken }
@@ -228,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inputCt0.value = json.ct0 || '';
         inputAuthToken.value = json.authToken || '';
         setCredStatus(true, '已保存 Cookie 凭据');
-        verifyAndShowUser(json.ct0, json.authToken, false);
+        await verifyAndShowUser(json.ct0, json.authToken, false);
       } else {
         // Fallback to local storage if remembered
         const localCt0 = localStorage.getItem('x_archive_ct0');
@@ -236,13 +242,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (localCt0 && localAuth) {
           inputCt0.value = localCt0;
           inputAuthToken.value = localAuth;
-          verifyAndShowUser(localCt0, localAuth, false);
+          await verifyAndShowUser(localCt0, localAuth, false);
         } else {
           setCredStatus(false, '未登录 X 账号');
+          credLoadingSkeleton?.classList.add('hidden');
+          cookieFormWrapper?.classList.remove('hidden');
         }
       }
     } catch (e) {
       console.warn('获取已存凭据错误:', e);
+      credLoadingSkeleton?.classList.add('hidden');
+      cookieFormWrapper?.classList.remove('hidden');
     }
   }
 
@@ -262,6 +272,8 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ ct0, authToken })
       });
       const json = await res.json();
+
+      credLoadingSkeleton?.classList.add('hidden');
 
       if (json.success && json.user) {
         setCredStatus(true, 'X 账号验证成功');
@@ -291,7 +303,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     } catch (err) {
+      credLoadingSkeleton?.classList.add('hidden');
       setCredStatus(false, '验证失败');
+      cookieFormWrapper.classList.remove('hidden');
     }
   }
 
