@@ -196,8 +196,26 @@ export async function onRequestPost({ request, env }) {
     let cursor = null;
     let attempts = 0;
 
+    // 增量同步：从 D1 读取已有博主数据
+    const existingMap = new Map();
+    if (db) {
+      try {
+        const existingRows = await db.prepare(`SELECT screen_name FROM bloggers`).all();
+        if (existingRows?.results) {
+          for (const row of existingRows.results) {
+            if (row.screen_name) {
+              existingMap.set(row.screen_name.toLowerCase(), true);
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    let incrementalHitCount = 0;
+    let isIncrementalStop = false;
+
     // 3. 执行关注列表分页抓取
-    while (attempts < 20) {
+    while (attempts < 20 && !isIncrementalStop) {
       attempts++;
       const variables = {
         userId: userId,
@@ -278,12 +296,23 @@ export async function onRequestPost({ request, env }) {
           fetchedUsers.push(formattedUser);
         }
 
-        if (followingCount > 0 && allUsersMap.size >= followingCount) {
+        // 智能增量判断：连续命中已有博主则停止
+        if (existingMap.has(uLower)) {
+          incrementalHitCount++;
+          if (incrementalHitCount >= 3) {
+            isIncrementalStop = true;
+            break;
+          }
+        } else {
+          incrementalHitCount = 0;
+        }
+
+        if ((followingCount > 0 && allUsersMap.size >= followingCount) || isIncrementalStop) {
           break;
         }
       }
 
-      if (followingCount > 0 && allUsersMap.size >= followingCount) {
+      if ((followingCount > 0 && allUsersMap.size >= followingCount) || isIncrementalStop) {
         break;
       }
 

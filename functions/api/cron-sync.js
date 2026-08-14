@@ -105,11 +105,27 @@ export async function onRequestGet({ env }) {
       "responsive_web_enhance_cards_enabled": false
     };
 
+    // 增量同步：从 D1 读取已有博主数据
+    const existingMap = new Map();
+    try {
+      const existingRows = await db.prepare(`SELECT screen_name FROM bloggers`).all();
+      if (existingRows?.results) {
+        for (const row of existingRows.results) {
+          if (row.screen_name) {
+            existingMap.set(row.screen_name.toLowerCase(), true);
+          }
+        }
+      }
+    } catch (e) {}
+
+    let incrementalHitCount = 0;
+    let isIncrementalStop = false;
+
     const fetchedUsers = [];
     let cursor = null;
     let hasMore = true;
 
-    while (hasMore && fetchedUsers.length < 200) {
+    while (hasMore && fetchedUsers.length < 200 && !isIncrementalStop) {
       const variables = { userId, count: 50, includePromotedContent: false };
       if (cursor) variables.cursor = cursor;
 
@@ -136,7 +152,7 @@ export async function onRequestGet({ env }) {
                 const screen_name = resObj.core?.screen_name || resObj.legacy?.screen_name || '';
                 const name = resObj.core?.name || resObj.legacy?.name || screen_name;
                 const avatar_url = (resObj.avatar?.image_url || resObj.legacy?.profile_image_url_https || '').replace('_normal', '_400x400');
-                let cover_url = resObj.legacy?.profile_banner_url || resObj.profile_banner_url || '';
+                let cover_url = resObj.banner?.image_url || resObj.legacy?.profile_banner_url || '';
                 if (cover_url && !cover_url.endsWith('/600x200') && !cover_url.endsWith('/1500x500')) {
                   cover_url = cover_url.replace(/\/+$/, '') + '/600x200';
                 }
@@ -161,6 +177,17 @@ export async function onRequestGet({ env }) {
                     backed_up_at: new Date().toISOString()
                   });
                 }
+
+                // 智能增量判断：连续命中已有博主则停止
+                if (screen_name && existingMap.has(screen_name.toLowerCase())) {
+                  incrementalHitCount++;
+                  if (incrementalHitCount >= 3) {
+                    isIncrementalStop = true;
+                    break;
+                  }
+                } else {
+                  incrementalHitCount = 0;
+                }
               }
             } else if (entry.entryId?.startsWith('cursor-bottom-')) {
               const nextCursor = entry.content?.value;
@@ -173,6 +200,8 @@ export async function onRequestGet({ env }) {
           }
         }
       }
+
+      if (isIncrementalStop) break;
 
       if (!foundEntries) hasMore = false;
     }
