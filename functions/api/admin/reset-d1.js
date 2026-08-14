@@ -51,12 +51,34 @@ export async function onRequestPost({ request, env }) {
       } catch (e) {}
     }
 
+    // 3. 同步清空 Cloudflare R2 存储桶中的图片文件
+    const bucket = env.BUCKET || env.R2 || env.MEDIA_BUCKET || null;
+    let r2ClearedCount = 0;
+    if (bucket) {
+      try {
+        let listed = await bucket.list({ limit: 500 });
+        while (listed.objects && listed.objects.length > 0) {
+          const keys = listed.objects.map(o => o.key);
+          await bucket.delete(keys);
+          r2ClearedCount += keys.length;
+          if (listed.truncated) {
+            listed = await bucket.list({ cursor: listed.cursor, limit: 500 });
+          } else {
+            break;
+          }
+        }
+      } catch (e) {
+        console.warn('R2 清理异常:', e.message);
+      }
+    }
+
     return Response.json({
       success: true,
-      message: 'Cloudflare D1 数据库已成功清理重置！',
+      message: `Cloudflare D1 数据库与 R2 图片桶已成功清理重置！(清理 R2 文件 ${r2ClearedCount} 个)`,
       cleared: {
         bloggers: true,
-        credentials: clearCredentials
+        credentials: clearCredentials,
+        r2_images_count: r2ClearedCount
       }
     });
   } catch (err) {

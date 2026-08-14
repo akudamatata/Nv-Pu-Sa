@@ -283,12 +283,17 @@ export async function onRequestPost(context) {
         const isVerified = !!(resObj.is_blue_verified || resObj.verification?.verified || resObj.legacy?.verified);
         const fullBio = parseFullDescription(resObj);
 
+        const rawAvatarUrl = avatarRaw ? avatarRaw.replace('_normal', '_400x400') : '';
+        const rawCoverUrl = coverRaw || '';
+
         const formattedUser = {
           id: String(resObj.rest_id || uScreenName),
           screen_name: uScreenName,
           name: uName,
-          avatar_url: avatarRaw ? avatarRaw.replace('_normal', '_400x400') : '',
-          cover_url: coverRaw || '',
+          avatar_raw: rawAvatarUrl,
+          cover_raw: rawCoverUrl,
+          avatar_url: rawAvatarUrl,
+          cover_url: rawCoverUrl,
           followers_count: followers,
           description: fullBio,
           verified: isVerified ? 1 : 0,
@@ -333,7 +338,47 @@ export async function onRequestPost(context) {
     const newUsers = fetchedUsers.filter(u => u.is_new);
     let dbSuccess = false;
 
-    // 4. 存入 Cloudflare D1 数据库
+    // 4. 同步全量下载头像与封面并写入 Cloudflare R2 对象存储桶
+    const bucket = getR2Bucket(env);
+    if (bucket && fetchedUsers.length > 0) {
+      const uploadTasks = fetchedUsers.map(async (u) => {
+        if (u.avatar_raw && u.avatar_raw.startsWith('http')) {
+          const aKey = `avatars/${u.screen_name}_400x400.jpg`;
+          try {
+            const aRes = await fetch(u.avatar_raw, { signal: AbortSignal.timeout(6000) });
+            if (aRes.ok) {
+              const aBuf = await aRes.arrayBuffer();
+              await bucket.put(aKey, aBuf, {
+                httpMetadata: {
+                  contentType: 'image/jpeg',
+                  cacheControl: 'public, max-age=31536000, immutable'
+                }
+              });
+              u.avatar_url = `/api/media?key=${encodeURIComponent(aKey)}`;
+            }
+          } catch (err) {}
+        }
+        if (u.cover_raw && u.cover_raw.startsWith('http')) {
+          const cKey = `covers/${u.screen_name}_banner.jpg`;
+          try {
+            const cRes = await fetch(u.cover_raw, { signal: AbortSignal.timeout(6000) });
+            if (cRes.ok) {
+              const cBuf = await cRes.arrayBuffer();
+              await bucket.put(cKey, cBuf, {
+                httpMetadata: {
+                  contentType: 'image/jpeg',
+                  cacheControl: 'public, max-age=31536000, immutable'
+                }
+              });
+              u.cover_url = `/api/media?key=${encodeURIComponent(cKey)}`;
+            }
+          } catch (err) {}
+        }
+      });
+      await Promise.allSettled(uploadTasks);
+    }
+
+    // 5. 存入 Cloudflare D1 数据库
     if (db && fetchedUsers.length > 0) {
       try {
         await db.prepare(`
