@@ -565,27 +565,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const pool = candidates.length > 0 ? candidates : state.rawUsers;
     const randomUser = pool[Math.floor(Math.random() * pool.length)];
 
-    spotlightContent.innerHTML = renderSpotlightCardHTML(randomUser);
+    renderSpotlightCard(randomUser);
   }
 
-  function renderSpotlightCardHTML(user) {
+  function renderSpotlightCard(user) {
     const avatar = user.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
     const isTopTier = (user.followers_count >= 500000);
     const tag = isTopTier ? 'Top Creator' : 'Creator';
-    const bioText = user.description ? escapeHtml(user.description) : '暂无个性签名';
 
-    return `
+    spotlightContent.innerHTML = `
       <div class="spotlight-avatar-wrap" onclick="window.open('https://x.com/${user.screen_name}', '_blank')">
         <img class="spotlight-avatar" src="${avatar}" alt="${escapeHtml(user.name)}" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';">
-        ${user.verified ? `<div class="badge-verified-native" style="position: absolute; bottom: 0; right: 0;" title="蓝标认证">${ICONS.verifiedNative}</div>` : ''}
+        ${user.verified ? `<div class="badge-verified-native" style="bottom: 2px; right: 2px;" title="Twitter 官方认证">${ICONS.verifiedNative}</div>` : ''}
       </div>
       <div class="spotlight-meta">
         <div class="spotlight-name-row">
           <span class="spotlight-name" title="${escapeHtml(user.name)}">${escapeHtml(user.name)}</span>
           <span class="card-influence-pill ${isTopTier ? 'top-tier' : ''}">${escapeHtml(tag)}</span>
         </div>
-        <a class="spotlight-handle" href="https://x.com/${user.screen_name}" target="_blank">@${escapeHtml(user.screen_name)} · ${formatFollowers(user.followers_count)} 关注者</a>
-        <div class="spotlight-bio-snippet">${bioText}</div>
+        <a class="spotlight-handle" href="https://x.com/${user.screen_name}" target="_blank">@${escapeHtml(user.screen_name)} · ${formatFollowers(user.followers_count)} 关注</a>
+        <div class="spotlight-bio-snippet">${formatBioWithLinks(user.description)}</div>
       </div>
     `;
   }
