@@ -5,7 +5,7 @@
  */
 
 function getR2Bucket(env) {
-  return env.BUCKET || env.R2 || env.MEDIA_BUCKET || env.x_archive_media || null;
+  return env.BUCKET || env.R2 || env.MEDIA_BUCKET || env.x_archive_media || env['x-archive-media'] || null;
 }
 
 export async function onRequestGet(context) {

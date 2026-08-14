@@ -24,13 +24,19 @@ export async function onRequestGet({ env }) {
         )
       `).run();
 
-      const bucket = env.BUCKET || env.R2 || env.MEDIA_BUCKET || null;
+      const { results = [] } = await db.prepare(`
+        SELECT * FROM bloggers ORDER BY followers_count DESC
+      `).all();
+
+      const bucket = env.BUCKET || env.R2 || env.MEDIA_BUCKET || env.x_archive_media || env['x-archive-media'] || null;
       let r2ImageCount = 0;
       if (bucket) {
         try {
           const listed = await bucket.list({ limit: 1000 });
           r2ImageCount = listed.objects ? listed.objects.length : 0;
-        } catch (e) {}
+        } catch (e) {
+          console.warn('R2 list error:', e);
+        }
       }
 
       return Response.json({
