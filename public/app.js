@@ -686,9 +686,11 @@ document.addEventListener('DOMContentLoaded', () => {
       pill.classList.add('active');
       state.currentFilter = pill.getAttribute('data-filter');
 
-      // 点击“最新归档”时，自动联动切换右侧排序为“归档时间最近”
+      // 点击“最新归档”时自动按时间最近排序，点击其余所有选项（全部/蓝标/Top头部/知名创作者）默认按粉丝数从高到低排序
       if (state.currentFilter === 'recent') {
         setSortMenuSelection('recent', '归档时间最近');
+      } else {
+        setSortMenuSelection('followers-desc', '粉丝数从高到低');
       }
 
       applyFilterAndSort();
