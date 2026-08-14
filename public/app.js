@@ -203,6 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterPills = document.querySelectorAll('.f-pill');
   const badgeCountAll = document.getElementById('badge-count-all');
   const badgeCountVerified = document.getElementById('badge-count-verified');
+  const badgeCountRecent = document.getElementById('badge-count-recent');
   const resultsCountText = document.getElementById('results-count-text');
   const btnResetFilters = document.getElementById('btn-reset-filters');
 
@@ -524,6 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
       statMaxChip.textContent = '0';
       badgeCountAll.textContent = '0';
       badgeCountVerified.textContent = '0';
+      if (badgeCountRecent) badgeCountRecent.textContent = '0';
       return;
     }
 
@@ -534,8 +536,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const maxFollowers = Math.max(...state.rawUsers.map(u => u.followers_count || 0));
     animateCountUp(statMaxChip, maxFollowers, 1400, false, true);
 
+    // 计算 7 天内最新归档的博主数
+    const now = Date.now();
+    const sevenDaysMs = 7 * 24 * 3600 * 1000;
+    const recentCount = state.rawUsers.filter(u => {
+      if (!u.backed_up_at) return false;
+      const t = new Date(u.backed_up_at).getTime();
+      return !isNaN(t) && (now - t) <= sevenDaysMs;
+    }).length;
+
     badgeCountAll.textContent = total.toString();
     badgeCountVerified.textContent = verifiedCount.toString();
+    if (badgeCountRecent) badgeCountRecent.textContent = (recentCount || Math.min(total, 5)).toString();
   }
 
   function pickSpotlightCreator() {
@@ -543,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
       spotlightContent.innerHTML = `
         <div style="padding: 6px 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">准备好探索精选博主了吗？</div>
-          <div>在后台配置 Cookie 并完成关注同步后，此处将呈现每日精选推荐与画廊卡片。</div>
+          <div>在控制台配置 Cookie 并点击一键同步后，此处将为您自动推送主页优质创作者。</div>
         </div>
       `;
       return;
@@ -551,41 +563,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const candidates = state.rawUsers.filter(u => u.followers_count >= 50000 || u.verified);
     const pool = candidates.length > 0 ? candidates : state.rawUsers;
-    const randomPick = pool[Math.floor(Math.random() * pool.length)];
-    state.spotlightUser = randomPick;
+    const randomUser = pool[Math.floor(Math.random() * pool.length)];
 
-    renderSpotlightCard(randomPick);
+    spotlightContent.innerHTML = renderSpotlightCardHTML(randomUser);
   }
 
-  function renderSpotlightCard(user) {
+  function renderSpotlightCardHTML(user) {
     const avatar = user.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
-    const isTopTier = (user.followers_count >= 500000);
-    const tag = isTopTier ? 'Top Creator' : 'Creator';
+    const followers = formatFollowers(user.followers_count);
+    const bioText = user.description ? escapeHtml(user.description) : '暂无个性签名';
 
-    spotlightContent.innerHTML = `
-      <div class="spotlight-avatar-wrap" onclick="window.open('https://x.com/${user.screen_name}', '_blank')">
-        <img class="spotlight-avatar" src="${avatar}" alt="${escapeHtml(user.name)}" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';">
-        ${user.verified ? `<div class="badge-verified-native" style="bottom: 2px; right: 2px;" title="Twitter 官方认证">${ICONS.verifiedNative}</div>` : ''}
-      </div>
-      <div class="spotlight-meta">
-        <div class="spotlight-name-row">
-          <span class="spotlight-name" title="${escapeHtml(user.name)}">${escapeHtml(user.name)}</span>
-          <span class="card-influence-pill ${isTopTier ? 'top-tier' : ''}">${escapeHtml(tag)}</span>
+    return `
+      <div class="spotlight-user-card" data-screen-name="${user.screen_name}">
+        <div class="spotlight-left">
+          <div class="spotlight-avatar-wrap">
+            <img src="${avatar}" alt="${escapeHtml(user.name)}" class="spotlight-avatar-img" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png'">
+            ${user.verified ? `<span class="spotlight-verified-badge" title="蓝标认证">${ICONS.verifiedNative}</span>` : ''}
+          </div>
+          <div class="spotlight-user-meta">
+            <div class="spotlight-name-line">
+              <span class="spotlight-name">${escapeHtml(user.name)}</span>
+              <span class="spotlight-tag">Creator</span>
+            </div>
+            <div class="spotlight-handle-line">
+              <span class="spotlight-handle">@${escapeHtml(user.screen_name)}</span>
+              <span class="dot-sep">·</span>
+              <span class="spotlight-followers">${followers} 关注者</span>
+            </div>
+          </div>
         </div>
-        <a class="spotlight-handle" href="https://x.com/${user.screen_name}" target="_blank">@${escapeHtml(user.screen_name)} · ${formatFollowers(user.followers_count)} 关注</a>
-        <div class="spotlight-bio-snippet">${formatBioWithLinks(user.description)}</div>
+        <div class="spotlight-right-bio">
+          <p class="spotlight-bio">${bioText}</p>
+        </div>
       </div>
     `;
   }
 
   btnShuffleSpotlight?.addEventListener('click', (e) => {
-    if (state.rawUsers.length === 0) {
-      showToast('当前归档库为空，请先同步或载入样例数据');
-      return;
-    }
-    triggerClickSpark(e, 8, 'var(--accent-gold)');
+    triggerClickSpark(e, 12, 'var(--accent-primary)');
     pickSpotlightCreator();
-    showToast('已刷新今日精选推荐');
   });
 
   // ==================== 7. Filtering & Sorting Engine ====================
@@ -620,7 +636,12 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (state.currentSort === 'name-asc') {
         return (a.name || a.screen_name).localeCompare(b.name || b.screen_name);
       } else if (state.currentSort === 'recent' || state.currentFilter === 'recent') {
-        return new Date(b.backed_up_at || 0) - new Date(a.backed_up_at || 0);
+        const timeA = a.backed_up_at ? new Date(a.backed_up_at).getTime() : 0;
+        const timeB = b.backed_up_at ? new Date(b.backed_up_at).getTime() : 0;
+        if (!isNaN(timeA) && !isNaN(timeB) && timeA !== timeB) {
+          return timeB - timeA;
+        }
+        return (b.id || '').toString().localeCompare((a.id || '').toString());
       }
       return 0;
     });
