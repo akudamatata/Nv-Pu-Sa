@@ -291,13 +291,15 @@ export async function onRequestPost({ request, env }) {
         };
 
         const uLower = uScreenName.toLowerCase();
+        const isExistingInDb = existingMap.has(uLower);
+
         if (!allUsersMap.has(uLower)) {
-          allUsersMap.set(uLower, formattedUser);
-          fetchedUsers.push(formattedUser);
+          allUsersMap.set(uLower, { ...formattedUser, is_new: !isExistingInDb });
+          fetchedUsers.push({ ...formattedUser, is_new: !isExistingInDb });
         }
 
         // 智能增量判断：连续命中已有博主则停止
-        if (existingMap.has(uLower)) {
+        if (isExistingInDb) {
           incrementalHitCount++;
           if (incrementalHitCount >= 3) {
             isIncrementalStop = true;
@@ -323,6 +325,7 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
+    const newUsers = fetchedUsers.filter(u => u.is_new);
     let dbSuccess = false;
 
     // 4. 存入 Cloudflare D1 数据库
@@ -372,12 +375,27 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
+    // 获取当前 D1 中的博主总数量
+    let totalDbCount = 0;
+    if (db) {
+      try {
+        const countRes = await db.prepare(`SELECT COUNT(*) as total FROM bloggers`).first();
+        if (countRes) totalDbCount = countRes.total || 0;
+      } catch (e) {}
+    }
+
     return Response.json({
       success: true,
       count: fetchedUsers.length,
+      new_count: newUsers.length,
+      is_incremental_stop: isIncrementalStop,
+      total_db_count: totalDbCount,
       following: fetchedUsers,
+      new_users: newUsers,
       db_saved: dbSuccess,
-      message: `同步成功！已备份 ${fetchedUsers.length} 位关注博主`
+      message: isIncrementalStop && newUsers.length === 0
+        ? `智能增量核对完成：库中数据已是最新，无新增博主。`
+        : `同步完成！新增 ${newUsers.length} 位关注博主`
     });
 
   } catch (err) {

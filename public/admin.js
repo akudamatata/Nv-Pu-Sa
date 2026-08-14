@@ -384,19 +384,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Array.isArray(json.following)) {
           btnTriggerSync.disabled = false;
           syncProgressFill.style.width = '100%';
-          syncProgressStatusText.textContent = `✅ 同步完成！已备份 ${json.count || 0} 位关注博主入库`;
-          syncProgressCountText.textContent = `${json.count || 0} 总数`;
-          
-          if (json.following.length > 0) {
-            json.following.slice(0, 15).forEach(u => {
-              logTerminal(`[FETCH] 抓取到: @${u.screen_name} (${u.name}) · 粉丝: ${u.followers_count}`);
-            });
-            if (json.following.length > 15) {
-              logTerminal(`[INFO] ... 以及其余 ${json.following.length - 15} 位博主数据已全部写入 D1 数据库。`);
+
+          const totalDbCount = json.total_db_count || json.count || 0;
+          const newCount = typeof json.new_count === 'number' ? json.new_count : (json.new_users ? json.new_users.length : 0);
+
+          if (json.is_incremental_stop && newCount === 0) {
+            const checkedNames = json.following.slice(0, 3).map(u => `@${u.screen_name}`).join(', ');
+            logTerminal(`[CHECK] 🔍 触发智能增量中断：已扫描核对连续 3 位在库博主 (${checkedNames})`);
+            logTerminal(`[SUCCESS] ✅ 增量核对完成：无新增关注博主，D1 数据库数据已是最新！(库中总计 ${totalDbCount} 人)`);
+            syncProgressStatusText.textContent = `✅ 增量核对完成！数据已最新，库中总计 ${totalDbCount} 人`;
+            syncProgressCountText.textContent = `新增 0 人`;
+            showToast(`✅ 智能增量核对完成，无新增博主 (库中总计 ${totalDbCount} 人)`);
+          } else {
+            const newUsers = json.new_users || json.following;
+            if (newUsers.length > 0) {
+              newUsers.forEach(u => {
+                logTerminal(`[NEW] ✨ 抓取到新增博主: @${u.screen_name} (${u.name}) · 粉丝: ${u.followers_count}`);
+              });
             }
+            if (json.is_incremental_stop) {
+              logTerminal(`[CHECK] 🔍 遇到已在库中的博主，已安全触发智能增量中断。`);
+            }
+            logTerminal(`[SUCCESS] ✅ Cloudflare D1 同步完成！本次新增 ${newUsers.length} 人，数据库当前总计 ${totalDbCount} 人。`);
+            syncProgressStatusText.textContent = `✅ 同步完成！本次新增 ${newUsers.length} 位关注博主`;
+            syncProgressCountText.textContent = `新增 ${newUsers.length} 人`;
+            showToast(`✅ 同步完成！新增 ${newUsers.length} 位博主 (总计 ${totalDbCount} 人)`);
           }
-          logTerminal(`[SUCCESS] Cloudflare D1 同步完成！当前数据库总计 ${json.count || 0} 人。`);
-          showToast(`✅ 同步完成！已写入 D1 数据库 (${json.count || 0} 人)`);
           return;
         }
 
