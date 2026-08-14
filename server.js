@@ -185,6 +185,31 @@ app.post('/api/verify-cookie', requireAdmin, async (req, res) => {
   }
 });
 
+// 免翻墙媒体流代理 (本地及海外直通)
+app.get('/api/media', async (req, res) => {
+  const targetUrl = req.query.url;
+  if (!targetUrl) {
+    return res.status(400).send('Missing url parameter');
+  }
+
+  try {
+    const fetchRes = await axios.get(targetUrl, {
+      responseType: 'stream',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+        'Referer': 'https://x.com/'
+      },
+      timeout: 8000
+    });
+
+    res.setHeader('Content-Type', fetchRes.headers['content-type'] || 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    fetchRes.data.pipe(res);
+  } catch (err) {
+    res.redirect('https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png');
+  }
+});
+
 // 一键智能增量同步关注列表 (受保护)
 app.post('/api/sync-following', requireAdmin, async (req, res) => {
   const { authToken, ct0, forceFull = false } = req.body;

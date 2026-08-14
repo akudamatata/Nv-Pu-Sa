@@ -550,6 +550,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (badgeCountRecent) badgeCountRecent.textContent = (recentCount || Math.min(total, 5)).toString();
   }
 
+  function resolveMediaUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('/api/media') || url.startsWith('data:') || url.startsWith('/')) {
+      return url;
+    }
+    if (url.includes('twimg.com')) {
+      return `/api/media?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  }
+
   function pickSpotlightCreator() {
     if (state.rawUsers.length === 0) {
       spotlightContent.innerHTML = `
@@ -569,7 +580,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderSpotlightCard(user) {
-    const avatar = user.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
+    const rawAvatar = user.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
+    const avatar = resolveMediaUrl(rawAvatar);
     const isTopTier = (user.followers_count >= 500000);
     const tag = isTopTier ? 'Top Creator' : 'Creator';
 
@@ -803,15 +815,14 @@ document.addEventListener('DOMContentLoaded', () => {
     card.setAttribute('tabindex', '0');
     card.style.animationDelay = `${Math.min(idx * 20, 250)}ms`;
 
-    const avatarSrc = user.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
+    const rawAvatar = user.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
+    const avatarSrc = resolveMediaUrl(rawAvatar);
     
-    let coverSrc = user.cover_url || '';
-    if (coverSrc && coverSrc.includes('pbs.twimg.com/profile_banners') && !coverSrc.match(/\/(600x200|1500x500|responsive_web)$/)) {
-      coverSrc = coverSrc.replace(/\/+$/, '') + '/600x200';
+    let rawCover = user.cover_url || '';
+    if (rawCover && rawCover.includes('pbs.twimg.com/profile_banners') && !rawCover.match(/\/(600x200|1500x500|responsive_web)$/)) {
+      rawCover = rawCover.replace(/\/+$/, '') + '/600x200';
     }
-    if (!coverSrc) {
-      coverSrc = fallbackCovers[idx % fallbackCovers.length];
-    }
+    const coverSrc = rawCover ? resolveMediaUrl(rawCover) : fallbackCovers[idx % fallbackCovers.length];
 
     const isTopTier = (user.followers_count >= 500000);
     const tierTag = isTopTier ? 'Top Creator' : 'Creator';
@@ -930,11 +941,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderRouletteCardPreview(user, isFinal) {
-    const avatarSrc = user.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
-    let coverSrc = user.cover_url || fallbackCovers[0];
-    if (coverSrc.includes('pbs.twimg.com/profile_banners') && !coverSrc.match(/\/(600x200|1500x500|responsive_web)$/)) {
-      coverSrc = coverSrc.replace(/\/+$/, '') + '/600x200';
+    const rawAvatar = user.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
+    const avatarSrc = resolveMediaUrl(rawAvatar);
+    let rawCover = user.cover_url || fallbackCovers[0];
+    if (rawCover.includes('pbs.twimg.com/profile_banners') && !rawCover.match(/\/(600x200|1500x500|responsive_web)$/)) {
+      rawCover = rawCover.replace(/\/+$/, '') + '/600x200';
     }
+    const coverSrc = resolveMediaUrl(rawCover);
 
     const isTopTier = (user.followers_count >= 500000);
     const tierTag = isTopTier ? 'Top Creator' : 'Creator';
@@ -990,8 +1003,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ==================== 10. Inspector Detail Drawer (Manual card inspector) ====================
   function openInspectorDrawer(user) {
-    const avatar = user.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
-    const cover = user.cover_url || fallbackCovers[0];
+    const rawAvatar = user.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
+    const avatar = resolveMediaUrl(rawAvatar);
+    const rawCover = user.cover_url || fallbackCovers[0];
+    const cover = resolveMediaUrl(rawCover);
     const isTop = (user.followers_count >= 500000);
 
     drawerBody.innerHTML = `

@@ -10,6 +10,10 @@ function getD1(env) {
   return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
 }
 
+function getR2Bucket(env) {
+  return env.BUCKET || env.R2 || env.MEDIA_BUCKET || env.x_archive_media || null;
+}
+
 function parseFullDescription(resObj) {
   let bio = resObj.profile_bio?.description || resObj.legacy?.description || '';
   const urls = resObj.profile_bio?.entities?.description?.urls || resObj.legacy?.entities?.description?.urls || [];
@@ -38,7 +42,8 @@ function parseFullDescription(resObj) {
   return bio.trim();
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
+  const { request, env } = context;
   try {
     const { ct0, authToken } = await request.json();
     if (!ct0 || !authToken) {
