@@ -2429,6 +2429,7 @@ code, kbd {
 .terminal-line-warn { color: #f59e0b; }
 .terminal-line-error { color: #f43f5e; font-weight: 600; }
 .terminal-line-fetch { color: #c084fc; }
+.terminal-line-r2 { color: #38bdf8; font-weight: 600; text-shadow: 0 0 8px rgba(56, 189, 248, 0.3); }
 
 .auth-gate-overlay {
   position: fixed;

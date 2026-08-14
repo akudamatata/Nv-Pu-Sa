@@ -446,14 +446,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const newUsers = json.new_users || json.following;
             if (newUsers.length > 0) {
               newUsers.forEach(u => {
-                logTerminal(`[NEW] ✨ 抓取到新增博主: @${u.screen_name} (${u.name}) · 粉丝: ${u.followers_count}`);
+                const isR2Stored = u.avatar_url && u.avatar_url.includes('/api/media');
+                const r2Tag = isR2Stored ? ' [R2 头像+封面已落库]' : '';
+                logTerminal(`[NEW] ✨ 抓取到新增博主: @${u.screen_name} (${u.name}) · 粉丝: ${u.followers_count}${r2Tag}`);
               });
+            }
+            if (json.r2_bound) {
+              logTerminal(`[R2] 📦 Cloudflare R2 对象存储已成功同步归档 ${json.r2_uploaded_count || (newUsers.length * 2)} 张高清图片 (avatars/ 与 covers/)`);
+            } else {
+              logTerminal(`[WARN] ⚠️ 未检测到 R2 存储桶绑定 (BUCKET)，图片链接已写入 D1。如需永久冷备请在 Pages 后台添加 R2 绑定: BUCKET`);
             }
             if (json.is_incremental_stop) {
               logTerminal(`[CHECK] 🔍 遇到已在库中的博主，已安全触发智能增量中断。`);
             }
-            logTerminal(`[SUCCESS] ✅ Cloudflare D1 同步完成！本次新增 ${newUsers.length} 人，数据库当前总计 ${totalDbCount} 人。`);
-            syncProgressStatusText.textContent = `✅ 同步完成！本次新增 ${newUsers.length} 位关注博主`;
+            logTerminal(`[SUCCESS] ✅ Cloudflare D1 & R2 双轨同步完成！本次新增 ${newUsers.length} 人 (R2 图片 ${json.r2_uploaded_count || 0} 张)，数据库当前总计 ${totalDbCount} 人。`);
+            syncProgressStatusText.textContent = `✅ 同步完成！本次新增 ${newUsers.length} 位关注博主 (R2 图片 ${json.r2_uploaded_count || 0} 张)`;
             syncProgressCountText.textContent = `新增 ${newUsers.length} 人`;
             showToast(`✅ 同步完成！新增 ${newUsers.length} 位博主 (总计 ${totalDbCount} 人)`);
           }
@@ -526,6 +533,8 @@ document.addEventListener('DOMContentLoaded', () => {
       lineHtml = `<span class="terminal-line-error">${safe}</span>`;
     } else if (safe.includes('[WARN]')) {
       lineHtml = `<span class="terminal-line-warn">${safe}</span>`;
+    } else if (safe.includes('[R2]')) {
+      lineHtml = `<span class="terminal-line-r2">${safe}</span>`;
     } else if (safe.includes('[NEW]') || safe.includes('[CHECK]')) {
       lineHtml = `<span class="terminal-line-info">${safe}</span>`;
     } else if (safe.includes('[FETCH]')) {

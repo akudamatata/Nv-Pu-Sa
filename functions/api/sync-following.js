@@ -340,6 +340,7 @@ export async function onRequestPost(context) {
 
     // 4. 同步全量下载头像与封面并写入 Cloudflare R2 对象存储桶
     const bucket = getR2Bucket(env);
+    let r2UploadedCount = 0;
     if (bucket && fetchedUsers.length > 0) {
       const uploadTasks = fetchedUsers.map(async (u) => {
         if (u.avatar_raw && u.avatar_raw.startsWith('http')) {
@@ -355,6 +356,7 @@ export async function onRequestPost(context) {
                 }
               });
               u.avatar_url = `/api/media?key=${encodeURIComponent(aKey)}`;
+              r2UploadedCount++;
             }
           } catch (err) {}
         }
@@ -371,6 +373,7 @@ export async function onRequestPost(context) {
                 }
               });
               u.cover_url = `/api/media?key=${encodeURIComponent(cKey)}`;
+              r2UploadedCount++;
             }
           } catch (err) {}
         }
@@ -443,9 +446,11 @@ export async function onRequestPost(context) {
       following: fetchedUsers,
       new_users: newUsers,
       db_saved: dbSuccess,
+      r2_bound: !!bucket,
+      r2_uploaded_count: r2UploadedCount,
       message: isIncrementalStop && newUsers.length === 0
         ? `智能增量核对完成：库中数据已是最新，无新增博主。`
-        : `同步完成！新增 ${newUsers.length} 位关注博主`
+        : `同步完成！新增 ${newUsers.length} 位关注博主 (R2 归档图片 ${r2UploadedCount} 张)`
     });
 
   } catch (err) {
