@@ -205,11 +205,11 @@ export async function onRequestPost(context) {
     const existingMap = new Map();
     if (db) {
       try {
-        const existingRows = await db.prepare(`SELECT screen_name FROM bloggers`).all();
+        const existingRows = await db.prepare(`SELECT screen_name, backed_up_at FROM bloggers`).all();
         if (existingRows?.results) {
           for (const row of existingRows.results) {
             if (row.screen_name) {
-              existingMap.set(row.screen_name.toLowerCase(), true);
+              existingMap.set(row.screen_name.toLowerCase(), row.backed_up_at || '2026-01-01T00:00:00.000Z');
             }
           }
         }
@@ -286,6 +286,15 @@ export async function onRequestPost(context) {
         const rawAvatarUrl = avatarRaw ? avatarRaw.replace('_normal', '_400x400') : '';
         const rawCoverUrl = coverRaw || '';
 
+        const uLower = uScreenName.toLowerCase();
+        const existingBackupTime = existingMap.get(uLower);
+        const isExistingInDb = !!existingBackupTime;
+
+        // 最新抓取的博主赋予当前最新且按抓取序号微调递减的时间戳；已有博主保留原有归档时间
+        const userBackedUpAt = isExistingInDb && typeof existingBackupTime === 'string'
+          ? existingBackupTime
+          : new Date(Date.now() - fetchedUsers.length * 1000).toISOString();
+
         const formattedUser = {
           id: String(resObj.rest_id || uScreenName),
           screen_name: uScreenName,
@@ -297,11 +306,8 @@ export async function onRequestPost(context) {
           followers_count: followers,
           description: fullBio,
           verified: isVerified ? 1 : 0,
-          backed_up_at: new Date().toISOString()
+          backed_up_at: userBackedUpAt
         };
-
-        const uLower = uScreenName.toLowerCase();
-        const isExistingInDb = existingMap.has(uLower);
 
         if (!allUsersMap.has(uLower)) {
           allUsersMap.set(uLower, { ...formattedUser, is_new: !isExistingInDb });
@@ -381,7 +387,7 @@ export async function onRequestPost(context) {
       await Promise.allSettled(uploadTasks);
     }
 
-    // 5. 存入 Cloudflare D1 数据库
+    // 5. 存入 Cloudflare D1 数据库 (使用 ON CONFLICT 保留已有博主归档时间)
     if (db && fetchedUsers.length > 0) {
       try {
         await db.prepare(`
@@ -399,9 +405,21 @@ export async function onRequestPost(context) {
         `).run();
 
         const stmt = db.prepare(`
-          INSERT OR REPLACE INTO bloggers (
+          INSERT INTO bloggers (
             id, screen_name, name, avatar_url, cover_url, followers_count, description, verified, backed_up_at
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(screen_name) DO UPDATE SET
+            name = excluded.name,
+            avatar_url = CASE WHEN excluded.avatar_url != '' THEN excluded.avatar_url ELSE bloggers.avatar_url END,
+            cover_url = CASE WHEN excluded.cover_url != '' THEN excluded.cover_url ELSE bloggers.cover_url END,
+            followers_count = excluded.followers_count,
+            description = excluded.description,
+            verified = excluded.verified,
+            backed_up_at = CASE 
+              WHEN bloggers.backed_up_at IS NOT NULL AND bloggers.backed_up_at != '' 
+              THEN bloggers.backed_up_at 
+              ELSE excluded.backed_up_at 
+            END
         `);
 
         // D1 batch 最大单次 100 条

@@ -224,9 +224,21 @@ export async function onRequestGet({ env }) {
       `).run();
 
       const stmt = db.prepare(`
-        INSERT OR REPLACE INTO bloggers (
+        INSERT INTO bloggers (
           id, screen_name, name, avatar_url, cover_url, followers_count, description, verified, backed_up_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(screen_name) DO UPDATE SET
+          name = excluded.name,
+          avatar_url = CASE WHEN excluded.avatar_url != '' THEN excluded.avatar_url ELSE bloggers.avatar_url END,
+          cover_url = CASE WHEN excluded.cover_url != '' THEN excluded.cover_url ELSE bloggers.cover_url END,
+          followers_count = excluded.followers_count,
+          description = excluded.description,
+          verified = excluded.verified,
+          backed_up_at = CASE 
+            WHEN bloggers.backed_up_at IS NOT NULL AND bloggers.backed_up_at != '' 
+            THEN bloggers.backed_up_at 
+            ELSE excluded.backed_up_at 
+          END
       `);
 
       const batch = fetchedUsers.map(item => {
