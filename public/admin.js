@@ -126,6 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const hudValCred = document.getElementById('hud-val-cred');
   const hudDotCred = document.getElementById('hud-dot-cred');
   const hudValCount = document.getElementById('hud-val-count');
+  const hudR2Status = document.getElementById('hud-r2-status');
   const hudD1Latency = document.getElementById('hud-d1-latency');
 
   let adminSessionToken = localStorage.getItem('x_archive_admin_token') || '';
@@ -140,6 +141,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (json.success && Array.isArray(json.data)) {
         if (hudValCount) hudValCount.textContent = `${json.data.length} 位博主`;
+      }
+
+      if (hudR2Status) {
+        if (json.r2_bound) {
+          hudR2Status.className = 'hud-latency-pill fast';
+          hudR2Status.textContent = json.r2_count > 0 ? `✓ ${json.r2_count} 图归档` : '✓ 10GB 就绪';
+        } else {
+          hudR2Status.className = 'hud-latency-pill normal';
+          hudR2Status.textContent = '待绑定';
+        }
       }
 
       if (hudD1Latency) {

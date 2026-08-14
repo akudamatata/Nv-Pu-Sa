@@ -24,12 +24,25 @@ export async function onRequestGet({ env }) {
         )
       `).run();
 
-      const { results } = await db.prepare(`
-        SELECT * FROM bloggers ORDER BY followers_count DESC
-      `).all();
-      return Response.json({ success: true, count: results.length, data: results, db_bound: true });
+      const bucket = env.BUCKET || env.R2 || env.MEDIA_BUCKET || null;
+      let r2ImageCount = 0;
+      if (bucket) {
+        try {
+          const listed = await bucket.list({ limit: 1000 });
+          r2ImageCount = listed.objects ? listed.objects.length : 0;
+        } catch (e) {}
+      }
+
+      return Response.json({
+        success: true,
+        count: results.length,
+        data: results,
+        db_bound: true,
+        r2_bound: !!bucket,
+        r2_count: r2ImageCount
+      });
     }
-    return Response.json({ success: true, count: 0, data: [], db_bound: false, note: 'D1 database not bound' });
+    return Response.json({ success: true, count: 0, data: [], db_bound: false, r2_bound: false, note: 'D1 database not bound' });
   } catch (err) {
     return Response.json({ success: false, error: err.message }, { status: 500 });
   }

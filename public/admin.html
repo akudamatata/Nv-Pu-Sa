@@ -109,14 +109,17 @@
           </div>
         </div>
 
-        <!-- 监控 3: 同步引擎状态 -->
-        <div class="hud-item">
+        <!-- 监控 3: R2 对象存储状态 -->
+        <div class="hud-item" id="hud-card-r2">
           <div class="hud-icon icon-purple">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
           </div>
           <div class="hud-data">
-            <span class="hud-value">GraphQL 2026</span>
-            <span class="hud-label">SYNC ENGINE · 待命中 ⚡</span>
+            <div class="hud-value-row">
+              <span class="hud-value" id="hud-val-r2">Cloudflare R2</span>
+              <span class="hud-latency-pill fast" id="hud-r2-status">✓ 已就绪</span>
+            </div>
+            <span class="hud-label">OBJECT STORAGE · 永久冷备 📦</span>
           </div>
         </div>
 
