@@ -2441,6 +2441,8 @@ code, kbd {
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;
+  text-align: left !important;
+  display: block;
 }
 
 .terminal-line-info { color: #38bdf8; }
