@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (hudR2Status) {
         if (json.r2_bound) {
           hudR2Status.className = 'hud-latency-pill fast';
-          hudR2Status.textContent = json.r2_count > 0 ? `✓ ${json.r2_count} 图归档` : '✓ 10GB 就绪';
+          hudR2Status.textContent = json.r2_count > 0 ? `${json.r2_count} 图已归档` : '10GB 就绪';
         } else {
           hudR2Status.className = 'hud-latency-pill normal';
           hudR2Status.textContent = '待绑定';
@@ -161,12 +161,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           hudD1Latency.className = 'hud-latency-pill slow';
         }
-        hudD1Latency.textContent = `⚡ ${latencyMs}ms`;
+        hudD1Latency.textContent = `${latencyMs}ms`;
       }
     } catch (e) {
       if (hudD1Latency) {
         hudD1Latency.className = 'hud-latency-pill error';
-        hudD1Latency.textContent = '⚡ 离线';
+        hudD1Latency.textContent = '离线';
       }
     }
   }
@@ -361,14 +361,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (showNotification) {
-          showToast(`✅ 成功连接 X 账号: @${json.user.screen_name}`);
+          showToast(`成功连接 X 账号: @${json.user.screen_name}`);
         }
       } else {
         setCredStatus(false, 'Cookie 已失效');
         xCookieAccountBox.classList.add('hidden');
         cookieFormWrapper.classList.remove('hidden');
         if (showNotification) {
-          showToast('❌ Cookie 凭据无效或已过期');
+          showToast('Cookie 凭据无效或已过期');
         }
       }
     } catch (err) {
@@ -428,15 +428,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const authToken = inputAuthToken.value.trim() || localStorage.getItem('x_archive_auth_token');
 
     if (!ct0 || !authToken) {
-      showToast('⚠️ 请先配置并登录 X Cookie 凭据');
+      showToast('请先配置并登录 X Cookie 凭据');
       return;
     }
 
     btnTriggerSync.disabled = true;
-    syncProgressStatusText.textContent = '🚀 正在连接 X 接口并增量同步...';
+    syncProgressStatusText.textContent = '正在连接 X 接口并增量同步...';
     syncProgressCountText.textContent = '请求中';
     syncProgressFill.style.width = '35%';
-    terminalLogOutput.innerHTML = `> [${new Date().toLocaleTimeString()}] 🚀 启动智能增量同步任务...\n`;
+    terminalLogOutput.innerHTML = `> [${new Date().toLocaleTimeString()}] 启动智能增量同步任务...\n`;
 
     try {
       const res = await fetch('/api/sync-following', {
@@ -460,43 +460,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (json.is_incremental_stop && newCount === 0) {
             const checkedNames = json.following.slice(0, 3).map(u => `@${u.screen_name}`).join(', ');
-            logTerminal(`[CHECK] 🔍 触发智能增量中断：已扫描核对连续 3 位在库博主 (${checkedNames})`);
-            logTerminal(`[SUCCESS] ✅ 增量核对完成：无新增关注博主，D1 数据库数据已是最新！(库中总计 ${totalDbCount} 人)`);
-            syncProgressStatusText.textContent = `✅ 增量核对完成！数据已最新，库中总计 ${totalDbCount} 人`;
+            logTerminal(`[CHECK] 触发智能增量中断：已扫描核对连续 3 位在库博主 (${checkedNames})`);
+            logTerminal(`[SUCCESS] 增量核对完成：无新增关注博主，D1 数据库数据已是最新！(库中总计 ${totalDbCount} 人)`);
+            syncProgressStatusText.textContent = `增量核对完成！数据已最新，库中总计 ${totalDbCount} 人`;
             syncProgressCountText.textContent = `新增 0 人`;
-            showToast(`✅ 智能增量核对完成，无新增博主 (库中总计 ${totalDbCount} 人)`);
+            showToast(`智能增量核对完成，无新增博主 (库中总计 ${totalDbCount} 人)`);
           } else {
             const newUsers = json.new_users || json.following;
             if (newUsers.length > 0) {
               newUsers.forEach(u => {
                 const isR2Stored = u.avatar_url && u.avatar_url.includes('/api/media');
                 const r2Tag = isR2Stored ? ' [R2 头像+封面已落库]' : '';
-                logTerminal(`[NEW] ✨ 抓取到新增博主: @${u.screen_name} (${u.name}) · 粉丝: ${u.followers_count}${r2Tag}`);
+                logTerminal(`[NEW] 抓取到新增博主: @${u.screen_name} (${u.name}) · 粉丝: ${u.followers_count}${r2Tag}`);
               });
             }
             if (json.r2_bound) {
-              logTerminal(`[R2] 📦 Cloudflare R2 对象存储已成功同步归档 ${json.r2_uploaded_count || (newUsers.length * 2)} 张高清图片 (avatars/ 与 covers/)`);
+              logTerminal(`[R2] Cloudflare R2 对象存储已成功同步归档 ${json.r2_uploaded_count || (newUsers.length * 2)} 张高清图片 (avatars/ 与 covers/)`);
             } else {
-              logTerminal(`[WARN] ⚠️ 未检测到 R2 存储桶绑定 (BUCKET)，图片链接已写入 D1。如需永久冷备请在 Pages 后台添加 R2 绑定: BUCKET`);
+              logTerminal(`[WARN] 未检测到 R2 存储桶绑定 (BUCKET)，图片链接已写入 D1。如需永久冷备请在 Pages 后台添加 R2 绑定: BUCKET`);
             }
             if (json.is_incremental_stop) {
-              logTerminal(`[CHECK] 🔍 遇到已在库中的博主，已安全触发智能增量中断。`);
+              logTerminal(`[CHECK] 遇到已在库中的博主，已安全触发智能增量中断。`);
             }
-            logTerminal(`[SUCCESS] ✅ Cloudflare D1 & R2 双轨同步完成！本次新增 ${newUsers.length} 人 (R2 图片 ${json.r2_uploaded_count || 0} 张)，数据库当前总计 ${totalDbCount} 人。`);
-            syncProgressStatusText.textContent = `✅ 同步完成！本次新增 ${newUsers.length} 位关注博主 (R2 图片 ${json.r2_uploaded_count || 0} 张)`;
+            logTerminal(`[SUCCESS] Cloudflare D1 & R2 双轨同步完成！本次新增 ${newUsers.length} 人 (R2 图片 ${json.r2_uploaded_count || 0} 张)，数据库当前总计 ${totalDbCount} 人。`);
+            syncProgressStatusText.textContent = `同步完成！本次新增 ${newUsers.length} 位关注博主 (R2 图片 ${json.r2_uploaded_count || 0} 张)`;
             syncProgressCountText.textContent = `新增 ${newUsers.length} 人`;
-            showToast(`✅ 同步完成！新增 ${newUsers.length} 位博主 (总计 ${totalDbCount} 人)`);
+            showToast(`同步完成！新增 ${newUsers.length} 位博主 (总计 ${totalDbCount} 人)`);
           }
           updateHudArchiveCount();
           return;
         }
 
         // 模式 B: Node.js 本地后台长轮询任务模式
-        showToast('🚀 增量同步任务已在后台启动');
+        showToast('增量同步任务已在后台启动');
         startPollingSyncStatus();
       } else {
         btnTriggerSync.disabled = false;
-        showToast(`❌ 同步失败: ${json.error}`);
+        showToast(`同步失败: ${json.error}`);
         logTerminal(`[ERROR] ${json.error}`);
       }
     } catch (err) {
@@ -531,12 +531,12 @@ document.addEventListener('DOMContentLoaded', () => {
           if (status.error) {
             syncProgressStatusText.textContent = `同步异常中断: ${status.error}`;
             logTerminal(`[ERROR] 任务失败: ${status.error}`);
-            showToast(`❌ 同步中断: ${status.error}`);
+            showToast(`同步中断: ${status.error}`);
           } else {
-            syncProgressStatusText.textContent = `✅ 同步完成！新增 ${status.newFetched || 0} 位博主，当前总计 ${status.total || 0} 位`;
+            syncProgressStatusText.textContent = `同步完成！新增 ${status.newFetched || 0} 位博主，当前总计 ${status.total || 0} 位`;
             syncProgressCountText.textContent = `${status.total || 0} 总数`;
             logTerminal(`[SUCCESS] 增量同步结束！本次抓取新增 ${status.newFetched || 0} 人，数据库总计 ${status.total || 0} 人。`);
-            showToast(`✅ 同步完成！新增 ${status.newFetched || 0} 位博主`);
+            showToast(`同步完成！新增 ${status.newFetched || 0} 位博主`);
             updateHudArchiveCount();
           }
         }
@@ -582,10 +582,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         downloadAnchor.remove();
-        showToast(`✅ 已导出 ${json.data.length} 条博主归档数据`);
+        showToast(`已导出 ${json.data.length} 条博主归档数据`);
       }
     } catch (e) {
-      showToast('❌ 导出备份失败');
+      showToast('导出备份失败');
     }
   });
 
@@ -602,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const data = JSON.parse(event.target.result);
         if (!Array.isArray(data)) {
-          showToast('❌ 备份文件格式错误，需为 JSON 数组');
+          showToast('备份文件格式错误，需为 JSON 数组');
           return;
         }
 
@@ -620,13 +620,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const resJson = await res.json();
 
         if (resJson.success) {
-          showToast(`✅ 成功导入并还原 ${data.length} 条博主数据`);
+          showToast(`成功导入并还原 ${data.length} 条博主数据`);
           updateHudArchiveCount();
         } else {
-          showToast(`❌ 导入失败: ${resJson.error}`);
+          showToast(`导入失败: ${resJson.error}`);
         }
       } catch (err) {
-        showToast('❌ 解析备份 JSON 失败');
+        showToast('解析备份 JSON 失败');
       }
     };
     reader.readAsText(file);
@@ -650,16 +650,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const json = await res.json();
 
       if (json.success) {
-        logTerminal('[RESET] ✅ 博主归档数据已清空');
-        showToast('✅ 博主归档数据已成功清空！');
+        logTerminal('[RESET] 博主归档数据已成功清空');
+        showToast('博主归档数据已成功清空！');
         updateHudArchiveCount();
       } else {
-        logTerminal(`[RESET ERROR] ❌ 清理失败: ${json.error}`);
-        showToast(`❌ 清理失败: ${json.error}`);
+        logTerminal(`[RESET ERROR] 清理失败: ${json.error}`);
+        showToast(`清理失败: ${json.error}`);
       }
     } catch (e) {
-      logTerminal(`[RESET ERROR] ❌ 请求异常: ${e.message}`);
-      showToast('❌ 清理请求异常');
+      logTerminal(`[RESET ERROR] 请求异常: ${e.message}`);
+      showToast('清理请求异常');
     }
   });
 
@@ -678,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   });
-  console.log("✅ 抓取到 " + users.length + " 位博主");
+  console.log("[FOLLOW-SPIDER] 抓取到 " + users.length + " 位博主");
   console.save(users, "x_followings.json");
 })();`;
 
@@ -693,7 +693,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnCopyCode?.addEventListener('click', () => {
     navigator.clipboard.writeText(helperScriptCode);
-    showToast('📋 已复制助手脚本到剪贴板');
+    showToast('已复制助手脚本到剪贴板');
   });
 
   // ==================== 8. Toast Notifications ====================
@@ -701,7 +701,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const toast = document.createElement('div');
     toast.className = 'toast-item';
     toast.innerHTML = `
-      <span style="color: var(--accent-primary);">✦</span>
+      <span class="toast-svg-icon" style="display: flex; align-items: center; color: var(--accent-primary);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      </span>
       <span>${escapeHtml(message)}</span>
     `;
 
