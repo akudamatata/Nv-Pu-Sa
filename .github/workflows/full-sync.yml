@@ -29,23 +29,13 @@ jobs:
           node -e "
           const https = require('https');
 
-          async function sleep(ms) {
+          function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
           }
 
-          async function run() {
-            console.log('🚀 [FULL-SYNC] 启动云端全量数据深度刷新引擎...');
-            console.log('🛡️ [POLICY] 严格遵循 20s~35s 单页拟人随机间隔 + 15 分钟窗口重置休眠');
-            
-            let page = 1;
-            let totalFetched = 0;
-            const cooldownPages = parseInt('${{ github.event.inputs.cooldown_pages || 3 }}', 10);
-            
-            console.log(\`📦 [CONFIG] 每完成 \${cooldownPages} 页 (约 150 人) 强制进入 15 分钟大休眠\`);
-            
-            // 触发 Cloudflare 逐批同步与 D1 落盘
-            const triggerCron = () => new Promise((resolve) => {
-              https.get('https://nv-pu-sa.pages.dev/api/cron-sync', (res) => {
+          function fetchPage(url) {
+            return new Promise((resolve) => {
+              https.get(url, (res) => {
                 let data = '';
                 res.on('data', chunk => data += chunk);
                 res.on('end', () => {
@@ -56,25 +46,82 @@ jobs:
                 });
               }).on('error', (err) => resolve({ success: false, error: err.message }));
             });
+          }
 
-            console.log('⚡ [SYNC] 发起 Cloudflare Pages 边缘节点同步...');
-            const res = await triggerCron();
-            console.log('📊 [RESULT]', JSON.stringify(res, null, 2));
+          async function run() {
+            console.log('🚀 [FULL-SYNC] 启动云端全量数据深度刷新引擎...');
+            console.log('🛡️ [POLICY] 严格遵循 20s~35s 单页拟人随机间隔 + 15 分钟窗口重置休眠机制');
             
-            if (res.success) {
-              console.log(\`✅ [SUCCESS] 全量同步成功完成！本次入库/更新: \${res.newFetched || 0} 人，数据库总量: \${res.total || 0} 人\`);
-            } else {
-              console.log(\`⚠️ [NOTICE] 同步响应: \${res.error || '未知响应'}\`);
-              if (String(res.error).includes('429') || String(res.error).includes('Rate limit')) {
-                console.log('❄️ [RATE LIMIT] 捕获到 429 频控，启动 15 分钟大休眠以彻底重置 X 频控桶...');
+            const cooldownPages = parseInt('${{ github.event.inputs.cooldown_pages || 3 }}', 10);
+            console.log(\`📦 [CONFIG] 每完成 \${cooldownPages} 页 (约 150 人) 强制进入 15 分钟大休眠\`);
+            
+            let cursor = '';
+            let page = 1;
+            let totalScanned = 0;
+            let totalSuspended = 0;
+            let totalDeleted = 0;
+            let totalDbCount = 0;
+
+            while (true) {
+              console.log(\`\n======================================================\`);
+              console.log(\`📄 [PAGE \${page}] 正在深度刷新第 \${page} 页博主全量资料 (粉丝数/Bio/头像/状态)... \${cursor ? '(游标: ' + cursor.slice(0, 15) + '...)' : '(首页)'}\`);
+              
+              const targetUrl = \`https://nv-pu-sa.pages.dev/api/cron-sync?mode=full\${cursor ? '&cursor=' + encodeURIComponent(cursor) : ''}\`;
+              let res = await fetchPage(targetUrl);
+
+              // 捕获 429 频控，启动 15 分钟大休眠重置
+              if (res && (res.is_rate_limit || String(res.error).includes('429') || String(res.error).includes('Rate limit'))) {
+                console.log('❄️ [RATE LIMIT] 捕获到 429 频控，启动 15 分钟 (900秒) 强力冷却以彻底重置 X 频控桶...');
                 await sleep(900 * 1000);
-                console.log('🔥 [RETRY] 15 分钟窗口已完全重置，正在安全重试...');
-                const retryRes = await triggerCron();
-                console.log('📊 [RETRY RESULT]', JSON.stringify(retryRes, null, 2));
+                console.log('🔥 [RETRY] 15 分钟冷却完毕，正在恢复当前页同步...');
+                res = await fetchPage(targetUrl);
+              }
+
+              if (!res || res.cron_status !== 'success') {
+                console.log(\`⚠️ [WARN] 本页同步响应异常: \${res?.error || '未知错误'}\`);
+                break;
+              }
+
+              const scanned = res.scanned_count || 0;
+              const suspended = res.suspended_count || 0;
+              const deleted = res.not_found_count || 0;
+              totalScanned += scanned;
+              totalSuspended += suspended;
+              totalDeleted += deleted;
+              totalDbCount = res.total_db_count || totalDbCount;
+
+              console.log(\`✅ [SUCCESS] 第 \${page} 页已更新 \${scanned} 位博主全量资料 (粉丝数/简介/头像/认证)！\`);
+              if (suspended > 0) console.log(\`   🚫 本页新标记 \${suspended} 位封号博主 (历史数据已安全封存留档)\`);
+              if (deleted > 0) console.log(\`   ⚠️ 本页新标记 \${deleted} 位注销博主 (历史数据已安全封存留档)\`);
+              console.log(\`📊 [PROGRESS] 当前已累计深度巡检: \${totalScanned} 人 | 库中总博主数: \${totalDbCount} 人\`);
+
+              if (!res.has_more || !res.next_cursor || res.next_cursor === cursor) {
+                console.log('\n🏁 [COMPLETE] 全部关注博主已全量逐页遍历核验完成！已到达关注列表底部。');
+                break;
+              }
+
+              cursor = res.next_cursor;
+              page++;
+
+              // 每完成 N 页强制进入 15 分钟大休眠彻底重置频控
+              if ((page - 1) % cooldownPages === 0) {
+                console.log(\`\n❄️ [COOLDOWN] 已连续完成 \${cooldownPages} 页巡检，进入 15 分钟 (900秒) 冷却期重置 X 频控配额...\`);
+                await sleep(900 * 1000);
+                console.log('🔥 [RESUME] 频控配额已完全重置，继续执行下一批巡检！');
+              } else {
+                const randomDelay = Math.floor(Math.random() * 15000) + 20000; // 20s ~ 35s
+                console.log(\`⏳ [WAIT] 拟人安全间隔: 休眠 \${(randomDelay / 1000).toFixed(1)} 秒后抓取下一页...\`);
+                await sleep(randomDelay);
               }
             }
-            
-            console.log('🎉 [DONE] 全量同步工作流圆满完成！');
+
+            console.log(\`\n======================================================\`);
+            console.log(\`🎉 [ALL DONE] 全量同步工作流圆满完成！\`);
+            console.log(\`📈 累计深度刷新博主: \${totalScanned} 人\`);
+            console.log(\`🛡️ 识别封号博主: \${totalSuspended} 人\`);
+            console.log(\`⚠️ 识别注销博主: \${totalDeleted} 人\`);
+            console.log(\`🗄️ 数据库当前永久归档总数: \${totalDbCount} 人\`);
+            console.log(\`======================================================\`);
           }
 
           run();

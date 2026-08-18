@@ -6,12 +6,17 @@ function getD1(env) {
   return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
 }
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ request, env }) {
   try {
     const db = getD1(env);
     if (!db) {
       return Response.json({ success: false, error: 'D1 数据库未绑定' }, { status: 400 });
     }
+
+    const reqUrl = new URL(request.url);
+    const mode = reqUrl.searchParams.get('mode') || 'incremental';
+    const isFullMode = mode === 'full';
+    let queryCursor = reqUrl.searchParams.get('cursor') || null;
 
     // 自动建表与平滑列升级保护
     try {
@@ -33,7 +38,7 @@ export async function onRequestGet({ env }) {
     `).first();
 
     if (!cred || !cred.ct0 || !cred.auth_token) {
-      return Response.json({ success: false, error: '尚未在后台配置并保存 X Cookie 凭据。请先登录 /admin 页面点击一次“一键同步全量关注”。' }, { status: 400 });
+      return Response.json({ success: false, error: '尚未在后台配置并保存 X Cookie 凭据。请先在 /admin 页面登录并保存凭据。' }, { status: 400 });
     }
 
     const cleanCt0 = String(cred.ct0).trim();
@@ -53,7 +58,6 @@ export async function onRequestGet({ env }) {
 
     let userId = cred.user_id ? String(cred.user_id).trim() : '';
 
-    // 若未预存 user_id，尝试动态在线提取
     if (!userId) {
       try {
         const uRes = await fetch('https://x.com/i/api/1.1/account/verify_credentials.json', {
@@ -105,14 +109,14 @@ export async function onRequestGet({ env }) {
       "responsive_web_enhance_cards_enabled": false
     };
 
-    // 增量同步：从 D1 读取已有博主数据
+    // 从 D1 读取已有博主列表
     const existingMap = new Map();
     try {
-      const existingRows = await db.prepare(`SELECT screen_name FROM bloggers`).all();
+      const existingRows = await db.prepare(`SELECT screen_name, backed_up_at FROM bloggers`).all();
       if (existingRows?.results) {
         for (const row of existingRows.results) {
           if (row.screen_name) {
-            existingMap.set(row.screen_name.toLowerCase(), true);
+            existingMap.set(row.screen_name.toLowerCase(), row.backed_up_at || true);
           }
         }
       }
@@ -122,10 +126,17 @@ export async function onRequestGet({ env }) {
     let isIncrementalStop = false;
 
     const fetchedUsers = [];
-    let cursor = null;
+    const suspendedUsers = [];
+    let nextCursorVal = null;
+    let cursor = queryCursor;
     let hasMore = true;
 
-    while (hasMore && fetchedUsers.length < 200 && !isIncrementalStop) {
+    // 全量模式单次请求拉取 1 页 (由 Actions 慢速安全循环调度)；增量模式最多跑 4 页 (命中已有即停)
+    const maxPageLoops = isFullMode ? 1 : 4;
+    let loops = 0;
+
+    while (hasMore && loops < maxPageLoops && !isIncrementalStop) {
+      loops++;
       const variables = { userId, count: 50, includePromotedContent: false };
       if (cursor) variables.cursor = cursor;
 
@@ -136,7 +147,12 @@ export async function onRequestGet({ env }) {
 
       const url = `https://x.com/i/api/graphql/${queryId}/Following?${params.toString()}`;
       const res = await fetch(url, { headers: apiHeaders, signal: AbortSignal.timeout(12000) });
-      if (!res.ok) break;
+      if (!res.ok) {
+        if (res.status === 429) {
+          return Response.json({ success: false, error: '429 Rate limit exceeded', is_rate_limit: true }, { status: 429 });
+        }
+        break;
+      }
 
       const json = await res.json();
       const instructions = json.data?.user?.result?.timeline?.timeline?.instructions || [];
@@ -149,6 +165,17 @@ export async function onRequestGet({ env }) {
               foundEntries = true;
               const resObj = entry.content?.itemContent?.user_results?.result;
               if (resObj) {
+                // 1. 识别账号异常状态 (封号 / 注销)
+                if (resObj.__typename === 'UserUnavailable') {
+                  const isSuspended = resObj.reason === 'Suspended' ? 1 : 2;
+                  const targetId = String(resObj.rest_id || entry.entryId?.replace('user-', '') || '');
+                  if (targetId) {
+                    suspendedUsers.push({ id: targetId, is_suspended: isSuspended });
+                  }
+                  continue;
+                }
+
+                // 2. 正常存活账号提取最新完整资料
                 const screen_name = resObj.core?.screen_name || resObj.legacy?.screen_name || '';
                 const name = resObj.core?.name || resObj.legacy?.name || screen_name;
                 const avatar_url = (resObj.avatar?.image_url || resObj.legacy?.profile_image_url_https || '').replace('_normal', '_400x400');
@@ -164,6 +191,10 @@ export async function onRequestGet({ env }) {
                 const location = resObj.location?.location || resObj.legacy?.location;
                 if (location) bio += `\n📍 位置: ${location}`;
 
+                const sLower = screen_name.toLowerCase();
+                const isExisting = existingMap.has(sLower);
+                const existingTime = isExisting && typeof existingMap.get(sLower) === 'string' ? existingMap.get(sLower) : null;
+
                 if (screen_name) {
                   fetchedUsers.push({
                     id: String(resObj.rest_id || screen_name),
@@ -174,24 +205,27 @@ export async function onRequestGet({ env }) {
                     followers_count,
                     description: bio,
                     verified: resObj.is_blue_verified || resObj.legacy?.verified ? 1 : 0,
-                    backed_up_at: new Date().toISOString()
+                    backed_up_at: existingTime || new Date().toISOString()
                   });
                 }
 
-                // 智能增量判断：连续命中已有博主则停止
-                if (screen_name && existingMap.has(screen_name.toLowerCase())) {
-                  incrementalHitCount++;
-                  if (incrementalHitCount >= 3) {
-                    isIncrementalStop = true;
-                    break;
+                // 仅在增量模式下进行命中已有即停判断；全量模式下持续扫描
+                if (!isFullMode) {
+                  if (screen_name && isExisting) {
+                    incrementalHitCount++;
+                    if (incrementalHitCount >= 3) {
+                      isIncrementalStop = true;
+                      break;
+                    }
+                  } else {
+                    incrementalHitCount = 0;
                   }
-                } else {
-                  incrementalHitCount = 0;
                 }
               }
             } else if (entry.entryId?.startsWith('cursor-bottom-')) {
               const nextCursor = entry.content?.value;
               if (nextCursor && nextCursor !== cursor) {
+                nextCursorVal = nextCursor;
                 cursor = nextCursor;
               } else {
                 hasMore = false;
@@ -202,8 +236,7 @@ export async function onRequestGet({ env }) {
       }
 
       if (isIncrementalStop) break;
-
-      if (!foundEntries) hasMore = false;
+      if (!foundEntries || !nextCursorVal) hasMore = false;
     }
 
     const newUsers = fetchedUsers.filter(u => !existingMap.has(u.screen_name.toLowerCase()));
@@ -269,22 +302,41 @@ export async function onRequestGet({ env }) {
       await db.batch(batch);
     }
 
+    // 批量更新封号/注销状态
+    if (suspendedUsers.length > 0) {
+      try {
+        const susStmt = db.prepare(`UPDATE bloggers SET is_suspended = ? WHERE id = ? OR screen_name = ?`);
+        const susBatch = suspendedUsers.map(s => susStmt.bind(s.is_suspended, s.id, s.id));
+        await db.batch(susBatch);
+      } catch (e) {}
+    }
+
     let totalDbCount = 0;
     try {
       const countRes = await db.prepare(`SELECT COUNT(*) as total FROM bloggers`).first();
       if (countRes) totalDbCount = countRes.total || 0;
     } catch (e) {}
 
+    const suspendedCount = suspendedUsers.filter(s => s.is_suspended === 1).length;
+    const deletedCount = suspendedUsers.filter(s => s.is_suspended === 2).length;
+
     return Response.json({
       cron_status: 'success',
+      mode: isFullMode ? 'full' : 'incremental',
       timestamp: new Date().toISOString(),
       scanned_count: fetchedUsers.length,
+      updated_count: fetchedUsers.length,
       new_count: newUsers.length,
-      is_incremental_stop: isIncrementalStop,
+      suspended_count: suspendedCount,
+      not_found_count: deletedCount,
+      next_cursor: nextCursorVal,
+      has_more: !!nextCursorVal && !isIncrementalStop,
       total_db_count: totalDbCount,
-      message: isIncrementalStop && newUsers.length === 0
-        ? `自动 Cron 增量核对完成！数据已是最新，无新增博主。(库中总计 ${totalDbCount} 人)`
-        : `自动 Cron 定时同步成功！成功增量备份 ${newUsers.length} 位新关注博主。(库中总计 ${totalDbCount} 人)`
+      message: isFullMode
+        ? `全量单页刷新完成：深度更新 ${fetchedUsers.length} 位博主全套资料，封号 ${suspendedCount} 人，注销 ${deletedCount} 人`
+        : (isIncrementalStop && newUsers.length === 0
+          ? `自动 Cron 增量核对完成！数据已是最新，无新增博主。(库中总计 ${totalDbCount} 人)`
+          : `自动 Cron 定时同步成功！成功增量备份 ${newUsers.length} 位新关注博主。(库中总计 ${totalDbCount} 人)`)
     });
 
   } catch (err) {
