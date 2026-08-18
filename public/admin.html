@@ -283,35 +283,79 @@
         <!-- 【右侧 38% 区域】：数据资产灾备 + 基础设施规格 -->
         <div class="bento-col-side">
           
-          <!-- Panel 3: Data Management & Backup -->
-          <section class="vault-panel-card">
+          <!-- Panel 3: Data Management, Backup & Cloud Actions -->
+          <section class="vault-panel-card" id="panel-data-management">
             <div class="panel-header-line">
               <div class="panel-heading">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                <h2>数据资产与灾备</h2>
+                <h2>数据资产、灾备与云端任务</h2>
               </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              <button id="btn-export-json" class="btn-secondary-action full-w">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                <span>导出全量 JSON 备份</span>
-              </button>
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <!-- 1. GitHub Actions 离线任务调度 -->
+              <div class="action-subgroup">
+                <div class="action-subgroup-title">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  <span>GitHub Actions 离线任务 (脱机慢速)</span>
+                </div>
 
-              <button id="btn-import-json" class="btn-secondary-action full-w">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                <span>导入恢复 JSON 备份</span>
-              </button>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <button id="btn-trigger-gh-full-sync" class="btn-primary-action full-w btn-task-card">
+                    <div class="btn-task-content">
+                      <div class="btn-task-title-row">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        <span>派发全量数据深度刷新</span>
+                      </div>
+                      <span class="btn-task-desc">云端后台慢速巡检全量博主，刷新资料与 R2 缓存</span>
+                    </div>
+                  </button>
 
-              <div style="height: 1px; background: var(--border-subtle); margin: 6px 0;"></div>
+                  <button id="btn-trigger-gh-refollow" class="btn-secondary-action full-w btn-task-card">
+                    <div class="btn-task-content">
+                      <div class="btn-task-title-row">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-spark)" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>
+                        <span>派发超慢速拟人回关 (防封)</span>
+                      </div>
+                      <span class="btn-task-desc">25s~45s 拟人随机大间隔 + 批次休眠，彻底规避 Limit</span>
+                    </div>
+                  </button>
 
+                  <a href="https://github.com/akudamatata/Nv-Pu-Sa/actions" target="_blank" rel="noopener noreferrer" class="link-actions-status">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    <span>在 GitHub 中查看 Actions 实时运行日志 ↗</span>
+                  </a>
+                </div>
+              </div>
+
+              <div style="height: 1px; background: var(--border-subtle);"></div>
+
+              <!-- 2. 本地 JSON 灾备 -->
+              <div class="action-subgroup">
+                <div class="action-subgroup-title">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span>本地数据快照</span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button id="btn-export-json" class="btn-secondary-action full-w btn-sm">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span>导出 JSON</span>
+                  </button>
+                  <button id="btn-import-json" class="btn-secondary-action full-w btn-sm">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>导入恢复</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3. 高危操作 -->
               <div class="danger-zone-card">
                 <div class="danger-zone-head">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                   <span>高危维护操作</span>
                 </div>
-                <button id="btn-reset-d1" class="btn-secondary-action btn-danger-full full-w" style="margin-top: 8px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" x2="10" y2="17"/><line x1="14" x2="14" y1="11" x2="14" y2="17"/></svg>
+                <button id="btn-reset-d1" class="btn-secondary-action btn-danger-full full-w" style="margin-top: 6px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                   <span>清空博主归档数据</span>
                 </button>
               </div>

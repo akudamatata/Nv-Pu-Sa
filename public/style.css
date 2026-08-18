@@ -2410,20 +2410,91 @@ code, kbd {
 }
 
 .danger-zone-card {
-  padding: 14px 16px;
-  background: rgba(244, 63, 94, 0.06);
-  border: 1px dashed hsla(350, 89%, 60%, 0.35);
+  padding: 12px 14px;
+  background: rgba(244, 63, 94, 0.05);
+  border: 1px dashed hsla(350, 89%, 60%, 0.3);
   border-radius: var(--radius-md);
-  margin-top: 6px;
+  margin-top: 2px;
 }
 
 .danger-zone-head {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--accent-danger);
+}
+
+.action-subgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-subgroup-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn-task-card {
+  padding: 10px 14px;
+  height: auto;
+  text-align: left;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-task-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.btn-task-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.btn-task-desc {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.72;
+  line-height: 1.35;
+}
+
+.link-actions-status {
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  transition: all 0.15s ease;
+}
+
+.link-actions-status:hover {
+  text-decoration: underline;
+  color: #fff;
+  transform: translateX(2px);
+}
+
+.btn-sm {
+  padding: 8px 12px;
+  font-size: 12.5px;
 }
 
 .full-w {
