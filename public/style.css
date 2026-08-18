@@ -1339,7 +1339,7 @@ code, kbd {
   padding: 8px 12px;
 }
 
-/* List View Streamlined Grid Alignment: 头像 | 标 | 昵称 | @id | 关注者 | 操作按钮 */
+/* List View Streamlined Grid Alignment: 头像 ➜ 标 ➜ 昵称 ➜ @id ➜ 关注者 ➜ (自适应右对齐) ➜ 操作按钮 */
 .blogger-wall.list-view .blogger-card {
   display: flex;
   flex-direction: row;
@@ -1358,7 +1358,7 @@ code, kbd {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   margin: 0;
   width: 100%;
   flex: 1;
@@ -1369,6 +1369,7 @@ code, kbd {
   margin: 0;
   flex-shrink: 0;
   width: 44px;
+  height: 44px;
 }
 
 .blogger-wall.list-view .card-avatar-wrap {
@@ -1379,51 +1380,57 @@ code, kbd {
 }
 
 .blogger-wall.list-view .card-user-info {
-  display: grid;
-  grid-template-columns: 105px minmax(130px, 1.4fr) minmax(120px, 1fr) 130px;
+  display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   flex: 1;
   min-width: 0;
   margin: 0;
+  flex-wrap: nowrap;
 }
 
 .blogger-wall.list-view .card-name-row {
-  display: contents;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .blogger-wall.list-view .card-influence-pill {
-  grid-column: 1;
-  justify-self: start;
+  order: -1;
   margin: 0;
   white-space: nowrap;
   font-size: 11px;
+  flex-shrink: 0;
 }
 
 .blogger-wall.list-view .card-user-name {
-  grid-column: 2;
   font-size: 14.5px;
   font-weight: 700;
   color: var(--text-main);
   margin: 0;
   white-space: nowrap;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .blogger-wall.list-view .card-user-handle {
-  grid-column: 3;
   font-size: 13px;
   font-family: var(--font-mono);
   color: var(--accent-primary);
   margin: 0;
   white-space: nowrap;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .blogger-wall.list-view .card-metrics-chip {
-  grid-column: 4;
   margin: 0;
   min-width: unset;
   width: fit-content;
@@ -1446,13 +1453,6 @@ code, kbd {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-@media (max-width: 1024px) {
-  .blogger-wall.list-view .card-user-info {
-    grid-template-columns: 95px minmax(110px, 1.2fr) minmax(100px, 1fr) 110px;
-    gap: 10px;
-  }
 }
 
 @media (max-width: 768px) {
