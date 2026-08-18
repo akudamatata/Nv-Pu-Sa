@@ -74,11 +74,11 @@ jobs:
               
               console.log(\`   ✅ [@\${u.screen_name}] 关注就绪 (进度 \${Math.round(idx / targetList.length * 100)}%)\`);
               
-              // 每 12 人强制进入批次降温休眠
+              // 每 12 人强制进入 15 分钟大休眠以彻底重置 X 频控窗口
               if (idx % 12 === 0 && idx < targetList.length) {
-                console.log('❄️ [COOLDOWN] 触发批次防风控降温休眠，静默休息 3 分钟...');
-                await sleep(180 * 1000);
-                console.log('🔥 [RESUME] 降温休眠结束，继续执行回关任务');
+                console.log('❄️ [COOLDOWN] 触发批次防风控大休眠，静默休息 15 分钟 (900秒) 以彻底重置 X 频控窗口...');
+                await sleep(900 * 1000);
+                console.log('🔥 [RESUME] 15 分钟休眠结束，X 频控配额已完全回满，继续执行回关任务');
               }
             }
             

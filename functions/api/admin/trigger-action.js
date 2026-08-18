@@ -50,7 +50,7 @@ export async function onRequestPost({ request, env }) {
 
     const repoOwner = 'akudamatata';
     const repoName = 'Nv-Pu-Sa';
-    const workflowFile = actionType === 'refollow' ? 're-follow.yml' : 'auto-sync.yml';
+    const workflowFile = actionType === 'refollow' ? 're-follow.yml' : 'full-sync.yml';
 
     const dispatchUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/actions/workflows/${workflowFile}/dispatches`;
 

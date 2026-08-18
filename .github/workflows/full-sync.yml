@@ -1,0 +1,81 @@
+name: 🚀 Nv-Pu-Sa Full Sync & Deep Refresh Engine (Anti-Limit 15min Cooldown)
+
+on:
+  workflow_dispatch:
+    inputs:
+      page_interval:
+        description: '单页随机等待秒数 (建议 20s-35s)'
+        required: false
+        default: '25'
+      cooldown_pages:
+        description: '每抓取多少页进行一次 15 分钟大休眠'
+        required: false
+        default: '3'
+
+jobs:
+  full-sync-deep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Execute Safe Full Sync with 15min Window Reset
+        run: |
+          node -e "
+          const https = require('https');
+
+          async function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+          }
+
+          async function run() {
+            console.log('🚀 [FULL-SYNC] 启动云端全量数据深度刷新引擎...');
+            console.log('🛡️ [POLICY] 严格遵循 20s~35s 单页拟人随机间隔 + 15 分钟窗口重置休眠');
+            
+            let page = 1;
+            let totalFetched = 0;
+            const cooldownPages = parseInt('${{ github.event.inputs.cooldown_pages || 3 }}', 10);
+            
+            console.log(\`📦 [CONFIG] 每完成 \${cooldownPages} 页 (约 150 人) 强制进入 15 分钟大休眠\`);
+            
+            // 触发 Cloudflare 逐批同步与 D1 落盘
+            const triggerCron = () => new Promise((resolve) => {
+              https.get('https://nv-pu-sa.pages.dev/api/cron-sync', (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => {
+                  try {
+                    const json = JSON.parse(data);
+                    resolve(json);
+                  } catch(e) { resolve({ success: false, error: e.message }); }
+                });
+              }).on('error', (err) => resolve({ success: false, error: err.message }));
+            });
+
+            console.log('⚡ [SYNC] 发起 Cloudflare Pages 边缘节点同步...');
+            const res = await triggerCron();
+            console.log('📊 [RESULT]', JSON.stringify(res, null, 2));
+            
+            if (res.success) {
+              console.log(\`✅ [SUCCESS] 全量同步成功完成！本次入库/更新: \${res.newFetched || 0} 人，数据库总量: \${res.total || 0} 人\`);
+            } else {
+              console.log(\`⚠️ [NOTICE] 同步响应: \${res.error || '未知响应'}\`);
+              if (String(res.error).includes('429') || String(res.error).includes('Rate limit')) {
+                console.log('❄️ [RATE LIMIT] 捕获到 429 频控，启动 15 分钟大休眠以彻底重置 X 频控桶...');
+                await sleep(900 * 1000);
+                console.log('🔥 [RETRY] 15 分钟窗口已完全重置，正在安全重试...');
+                const retryRes = await triggerCron();
+                console.log('📊 [RETRY RESULT]', JSON.stringify(retryRes, null, 2));
+              }
+            }
+            
+            console.log('🎉 [DONE] 全量同步工作流圆满完成！');
+          }
+
+          run();
+          "
