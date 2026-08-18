@@ -2118,7 +2118,7 @@ code, kbd {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  height: 100%;
+  min-height: 0;
 }
 
 .bento-col-main .vault-panel-card {
@@ -2672,8 +2672,8 @@ code, kbd {
   font-family: var(--font-mono);
   line-height: 1.6;
   color: #e2e8f0;
-  flex: 1;
-  min-height: 280px;
+  flex: 1 1 0;
+  min-height: 200px;
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;
