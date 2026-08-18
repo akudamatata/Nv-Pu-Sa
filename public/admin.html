@@ -361,7 +361,121 @@
 
       </div>
 
+      <!-- Panel 5: Full-Width Blogger Vault Management & Shield Panel -->
+      <section class="vault-panel-card blogger-vault-panel" id="panel-bloggers">
+        <div class="panel-header-line">
+          <div class="panel-heading">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <h2>博主档案资产与画廊展示中枢</h2>
+          </div>
+          <div class="panel-header-actions">
+            <button id="btn-export-handles" class="btn-secondary-action btn-sm">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+              <span>导出 Handle 清单</span>
+            </button>
+            <button id="btn-refresh-bloggers" class="btn-secondary-action btn-sm" title="刷新列表">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              <span>刷新</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Toolbar: Search, Filter Tabs, Sorter -->
+        <div class="blogger-vault-toolbar">
+          <!-- Search Box -->
+          <div class="blogger-search-wrapper">
+            <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="blogger-search-input" placeholder="搜索博主昵称 / @Handle / Bio 简介..." autocomplete="off">
+            <button id="btn-clear-blogger-search" class="clear-search-btn hidden" aria-label="清空搜索">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+
+          <!-- Filter Tabs (React Bits CountUp) -->
+          <div class="blogger-filter-tabs">
+            <button class="filter-tab-btn active" data-status="all">
+              <span>全部</span>
+              <span class="tab-badge" id="tab-count-all">0</span>
+            </button>
+            <button class="filter-tab-btn" data-status="active">
+              <span>展示中</span>
+              <span class="tab-badge active" id="tab-count-active">0</span>
+            </button>
+            <button class="filter-tab-btn" data-status="blocked">
+              <span>已屏蔽</span>
+              <span class="tab-badge blocked" id="tab-count-blocked">0</span>
+            </button>
+          </div>
+
+          <!-- Sort Dropdown -->
+          <div class="blogger-sort-wrapper">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
+            <select id="blogger-sort-select">
+              <option value="backed_up_at_desc">最新归档优先</option>
+              <option value="backed_up_at_asc">最早归档优先</option>
+              <option value="followers_desc">粉丝量由高到低</option>
+              <option value="followers_asc">粉丝量由低到高</option>
+              <option value="name_asc">博主昵称 A-Z</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Blogger List Container with Spotlight Glow -->
+        <div id="blogger-list-container" class="blogger-list-container">
+          <div class="blogger-list-loading">
+            <div class="skeleton-spinner"></div>
+            <span>正在加载博主资产库...</span>
+          </div>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div class="blogger-pagination-bar" id="blogger-pagination-bar">
+          <div class="pagination-info" id="blogger-pagination-info">
+            显示 0 - 0 / 共 0 位博主
+          </div>
+          <div class="pagination-controls">
+            <button id="btn-page-prev" class="btn-page-action" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              <span>上一页</span>
+            </button>
+            <span class="page-current-indicator" id="blogger-page-indicator">第 1 / 1 页</span>
+            <button id="btn-page-next" class="btn-page-action" disabled>
+              <span>下一页</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
     </main>
+
+    <!-- Export Handles Modal -->
+    <div id="modal-export-handles" class="inspector-backdrop hidden">
+      <div class="auth-card-window" style="max-width: 560px; text-align: left;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            <h3 style="font-size: 17px; font-weight: 700; color: var(--text-main);">博主 Handle 资产导出</h3>
+          </div>
+          <button class="drawer-close-btn btn-close-modal" id="btn-close-export-modal" aria-label="关闭">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+          当前筛选条件下的博主 Handle 清单（每行一个），可用于换号备份或批量回关：
+        </p>
+        <div class="terminal-log-box" style="margin-top: 0;">
+          <textarea id="export-handles-textarea" readonly class="terminal-content" style="width: 100%; height: 200px; background: transparent; border: none; resize: none; color: var(--accent-spark); font-family: var(--font-mono); font-size: 12.5px; outline: none;"></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+          <button type="button" id="btn-copy-export-handles" class="btn-primary-action">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+            <span>一键复制全部 Handle</span>
+          </button>
+          <button type="button" class="btn-secondary-action btn-close-modal">关闭</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Console Script Modal -->
     <div id="modal-script" class="inspector-backdrop hidden">

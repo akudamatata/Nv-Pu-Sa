@@ -9,7 +9,7 @@ export async function onRequestGet({ env }) {
   try {
     const db = getD1(env);
     if (db) {
-      // 自动创表保护
+      // 自动创表保护与 is_blocked 兼容升级
       await db.prepare(`
         CREATE TABLE IF NOT EXISTS bloggers (
           id TEXT PRIMARY KEY,
@@ -20,12 +20,19 @@ export async function onRequestGet({ env }) {
           followers_count INTEGER DEFAULT 0,
           description TEXT,
           verified INTEGER DEFAULT 0,
-          backed_up_at TEXT
+          backed_up_at TEXT,
+          is_blocked INTEGER DEFAULT 0
         )
       `).run();
 
+      try {
+        await db.prepare(`ALTER TABLE bloggers ADD COLUMN is_blocked INTEGER DEFAULT 0`).run();
+      } catch (e) {}
+
       const { results = [] } = await db.prepare(`
-        SELECT * FROM bloggers ORDER BY followers_count DESC
+        SELECT * FROM bloggers 
+        WHERE COALESCE(is_blocked, 0) = 0 
+        ORDER BY followers_count DESC
       `).all();
 
       const bucket = env.BUCKET || env.R2 || env.MEDIA_BUCKET || env.x_archive_media || env['x-archive-media'] || null;
@@ -73,14 +80,19 @@ export async function onRequestPost({ request, env }) {
           followers_count INTEGER DEFAULT 0,
           description TEXT,
           verified INTEGER DEFAULT 0,
-          backed_up_at TEXT
+          backed_up_at TEXT,
+          is_blocked INTEGER DEFAULT 0
         )
       `).run();
 
+      try {
+        await db.prepare(`ALTER TABLE bloggers ADD COLUMN is_blocked INTEGER DEFAULT 0`).run();
+      } catch (e) {}
+
       const stmt = db.prepare(`
         INSERT OR REPLACE INTO bloggers (
-          id, screen_name, name, avatar_url, cover_url, followers_count, description, verified, backed_up_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          id, screen_name, name, avatar_url, cover_url, followers_count, description, verified, backed_up_at, is_blocked
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const batch = data.map(item => {
@@ -93,7 +105,8 @@ export async function onRequestPost({ request, env }) {
           item.followers_count || 0,
           item.description || '',
           item.verified ? 1 : 0,
-          item.backed_up_at || new Date().toISOString()
+          item.backed_up_at || new Date().toISOString(),
+          item.is_blocked ? 1 : 0
         );
       });
 

@@ -194,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const json = await res.json();
       if (json.authenticated) {
         initCredentials();
+        loadBloggerVault();
       } else {
         performLogout();
       }
@@ -242,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('🔓 通行鉴权成功，已进入控制台');
         initCredentials();
         updateHudArchiveCount();
+        loadBloggerVault();
       } else {
         authCardBox.classList.add('shake-error');
         setTimeout(() => authCardBox.classList.remove('shake-error'), 500);
@@ -538,6 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
             logTerminal(`[SUCCESS] 增量同步结束！本次抓取新增 ${status.newFetched || 0} 人，数据库总计 ${status.total || 0} 人。`);
             showToast(`同步完成！新增 ${status.newFetched || 0} 位博主`);
             updateHudArchiveCount();
+            loadBloggerVault();
           }
         }
       } catch (err) {
@@ -622,6 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resJson.success) {
           showToast(`成功导入并还原 ${data.length} 条博主数据`);
           updateHudArchiveCount();
+          loadBloggerVault();
         } else {
           showToast(`导入失败: ${resJson.error}`);
         }
@@ -653,6 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
         logTerminal('[RESET] 博主归档数据已成功清空');
         showToast('博主归档数据已成功清空！');
         updateHudArchiveCount();
+        loadBloggerVault();
       } else {
         logTerminal(`[RESET ERROR] 清理失败: ${json.error}`);
         showToast(`清理失败: ${json.error}`);
@@ -661,6 +666,425 @@ document.addEventListener('DOMContentLoaded', () => {
       logTerminal(`[RESET ERROR] 请求异常: ${e.message}`);
       showToast('清理请求异常');
     }
+  });
+
+  // ==================== 6.5 Blogger Vault Management & Shield Controller (React Bits Motion) ====================
+  const panelBloggers = document.getElementById('panel-bloggers');
+  const bloggerSearchInput = document.getElementById('blogger-search-input');
+  const btnClearBloggerSearch = document.getElementById('btn-clear-blogger-search');
+  const filterTabBtns = document.querySelectorAll('.filter-tab-btn');
+  const tabCountAll = document.getElementById('tab-count-all');
+  const tabCountActive = document.getElementById('tab-count-active');
+  const tabCountBlocked = document.getElementById('tab-count-blocked');
+  const bloggerSortSelect = document.getElementById('blogger-sort-select');
+  const bloggerListContainer = document.getElementById('blogger-list-container');
+  const bloggerPaginationInfo = document.getElementById('blogger-pagination-info');
+  const bloggerPageIndicator = document.getElementById('blogger-page-indicator');
+  const btnPagePrev = document.getElementById('btn-page-prev');
+  const btnPageNext = document.getElementById('btn-page-next');
+  const btnRefreshBloggers = document.getElementById('btn-refresh-bloggers');
+  const btnExportHandles = document.getElementById('btn-export-handles');
+  const modalExportHandles = document.getElementById('modal-export-handles');
+  const exportHandlesTextarea = document.getElementById('export-handles-textarea');
+  const btnCopyExportHandles = document.getElementById('btn-copy-export-handles');
+
+  let bvCurrentKeyword = '';
+  let bvCurrentStatus = 'all';
+  let bvCurrentSort = 'backed_up_at_desc';
+  let bvCurrentPage = 1;
+  let bvCurrentLimit = 30;
+  let bvTotalPages = 1;
+  let bvSearchDebounceTimer = null;
+  let bvIsLoading = false;
+
+  // React Bits SpotlightCard Pointer Motion
+  panelBloggers?.addEventListener('mousemove', (e) => {
+    const rect = panelBloggers.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    panelBloggers.style.setProperty('--spotlight-x', `${x}px`);
+    panelBloggers.style.setProperty('--spotlight-y', `${y}px`);
+    panelBloggers.classList.add('spotlight-active');
+  });
+
+  panelBloggers?.addEventListener('mouseleave', () => {
+    panelBloggers.classList.remove('spotlight-active');
+  });
+
+  // React Bits CountUp Animation (EaseOutExpo)
+  function animateCountUp(element, targetVal, duration = 400) {
+    if (!element) return;
+    const startVal = parseInt(element.textContent.replace(/,/g, '') || '0', 10) || 0;
+    if (startVal === targetVal) {
+      element.textContent = targetVal.toLocaleString();
+      return;
+    }
+    const startTime = performance.now();
+    function update(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const current = Math.round(startVal + (targetVal - startVal) * easeProgress);
+      element.textContent = current.toLocaleString();
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      } else {
+        element.textContent = targetVal.toLocaleString();
+      }
+    }
+    requestAnimationFrame(update);
+  }
+
+  // React Bits ClickSpark Particle Burst
+  function triggerClickSpark(e) {
+    const x = e.clientX;
+    const y = e.clientY;
+    const colors = ['#38bdf8', '#f59e0b', '#10b981', '#a855f7', '#ec4899'];
+    for (let i = 0; i < 6; i++) {
+      const spark = document.createElement('div');
+      spark.className = 'click-spark-particle';
+      const angle = (Math.PI * 2 / 6) * i + (Math.random() - 0.5);
+      const distance = 18 + Math.random() * 16;
+      const dx = Math.cos(angle) * distance;
+      const dy = Math.sin(angle) * distance;
+      spark.style.setProperty('--dx', `${dx}px`);
+      spark.style.setProperty('--dy', `${dy}px`);
+      spark.style.background = colors[i % colors.length];
+      spark.style.left = `${x}px`;
+      spark.style.top = `${y}px`;
+      document.body.appendChild(spark);
+      setTimeout(() => spark.remove(), 400);
+    }
+  }
+
+  function formatFollowersCount(num) {
+    if (!num || isNaN(num)) return '0';
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+    return String(num);
+  }
+
+  function resolveMediaUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('/api/media?key=')) return url;
+    if (url.includes('pbs.twimg.com') || url.includes('abs.twimg.com')) {
+      return `/api/media?key=${encodeURIComponent(url)}`;
+    }
+    return url;
+  }
+
+  async function loadBloggerVault() {
+    if (!adminSessionToken || bvIsLoading) return;
+    bvIsLoading = true;
+
+    if (bloggerListContainer) {
+      bloggerListContainer.innerHTML = `
+        <div class="blogger-list-loading">
+          <div class="skeleton-spinner"></div>
+          <span>正在检索博主资产数据...</span>
+        </div>
+      `;
+    }
+
+    try {
+      const params = new URLSearchParams({
+        keyword: bvCurrentKeyword,
+        status: bvCurrentStatus,
+        sort: bvCurrentSort,
+        page: bvCurrentPage,
+        limit: bvCurrentLimit
+      });
+
+      const res = await fetch(`/api/admin/bloggers?${params.toString()}`, {
+        headers: { 'x-admin-token': adminSessionToken }
+      });
+      const json = await res.json();
+
+      if (json.success) {
+        // 更新统计计数（React Bits CountUp）
+        if (json.stats) {
+          animateCountUp(tabCountAll, json.stats.total);
+          animateCountUp(tabCountActive, json.stats.active);
+          animateCountUp(tabCountBlocked, json.stats.blocked);
+        }
+
+        bvTotalPages = json.totalPages || 1;
+        renderBloggerRows(json.data || []);
+        renderPagination(json.total || 0, json.page, json.limit);
+      } else {
+        bloggerListContainer.innerHTML = `
+          <div class="blogger-list-empty">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>加载失败: ${escapeHtml(json.error)}</span>
+          </div>
+        `;
+      }
+    } catch (e) {
+      bloggerListContainer.innerHTML = `
+        <div class="blogger-list-empty">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>网络请求异常，请刷新重试</span>
+        </div>
+      `;
+    } finally {
+      bvIsLoading = false;
+    }
+  }
+
+  function renderBloggerRows(users) {
+    if (!bloggerListContainer) return;
+    if (!Array.isArray(users) || users.length === 0) {
+      bloggerListContainer.innerHTML = `
+        <div class="blogger-list-empty">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>未检索到匹配的博主档案</span>
+        </div>
+      `;
+      return;
+    }
+
+    bloggerListContainer.innerHTML = users.map((u, idx) => {
+      const isBlocked = u.is_blocked === 1;
+      const avatarSrc = resolveMediaUrl(u.avatar_url) || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
+      const backupDate = u.backed_up_at ? new Date(u.backed_up_at).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '未记录';
+      const staggerDelay = (idx * 0.02).toFixed(2);
+
+      return `
+        <div class="blogger-row ${isBlocked ? 'is-blocked' : ''}" id="blogger-row-${escapeHtml(u.screen_name)}" style="animation-delay: ${staggerDelay}s;">
+          <div class="blogger-row-left">
+            <div class="blogger-row-avatar-box">
+              <img class="blogger-row-avatar" src="${escapeHtml(avatarSrc)}" alt="${escapeHtml(u.name)}" loading="lazy" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png'">
+            </div>
+            <div class="blogger-row-info">
+              <div class="blogger-name-line">
+                <span class="blogger-row-name">${escapeHtml(u.name)}</span>
+                ${u.verified ? `
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2.5" title="X 官方认证"><path d="M12 2l2.4 2.4 3.4-.4 1.2 3.2 3 1.6-1 3.2 1 3.2-3 1.6-1.2 3.2-3.4-.4L12 22l-2.4-2.4-3.4.4-1.2-3.2-3-1.6 1-3.2-1-3.2 3-1.6 1.2-3.2 3.4.4L12 2z"/><path d="m9 12 2 2 4-4"/></svg>
+                ` : ''}
+                <span class="blogger-row-handle">@${escapeHtml(u.screen_name)}</span>
+                ${isBlocked ? `
+                  <span class="badge-blocked-tag">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                    <span>已在画廊屏蔽</span>
+                  </span>
+                ` : ''}
+              </div>
+              <div class="blogger-row-bio" title="${escapeHtml(u.description || '')}">${escapeHtml(u.description || '暂无个人简介')}</div>
+            </div>
+          </div>
+
+          <div class="blogger-row-right">
+            <div class="blogger-row-meta">
+              <span class="blogger-followers-pill">${formatFollowersCount(u.followers_count)} 粉丝</span>
+              <span class="blogger-backup-date">归档于 ${backupDate}</span>
+            </div>
+
+            <div class="blogger-row-actions">
+              <a href="https://x.com/${escapeHtml(u.screen_name)}" target="_blank" rel="noopener noreferrer" class="btn-action-icon" title="在 X 中打开个人主页">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </a>
+
+              <button type="button" class="btn-action-icon btn-copy-handle" data-handle="${escapeHtml(u.screen_name)}" title="复制 @${escapeHtml(u.screen_name)}">
+                <svg class="icon-copy" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <svg class="icon-check hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-success)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+
+              <button type="button" class="btn-action-block ${isBlocked ? 'to-unblock' : 'to-block'}" data-handle="${escapeHtml(u.screen_name)}" data-blocked="${isBlocked ? '1' : '0'}" title="${isBlocked ? '恢复在公开画廊中展示' : '在公开画廊中屏蔽此博主'}">
+                ${isBlocked ? `
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <span>恢复展示</span>
+                ` : `
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                  <span>屏蔽</span>
+                `}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // 绑定行内按钮事件
+    bloggerListContainer.querySelectorAll('.btn-copy-handle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const handle = btn.getAttribute('data-handle');
+        if (!handle) return;
+        navigator.clipboard.writeText(`@${handle}`);
+        triggerClickSpark(e);
+
+        const iconCopy = btn.querySelector('.icon-copy');
+        const iconCheck = btn.querySelector('.icon-check');
+        iconCopy?.classList.add('hidden');
+        iconCheck?.classList.remove('hidden');
+
+        showToast(`已复制 @${handle} 到剪贴板`);
+        setTimeout(() => {
+          iconCopy?.classList.remove('hidden');
+          iconCheck?.classList.add('hidden');
+        }, 1800);
+      });
+    });
+
+    bloggerListContainer.querySelectorAll('.btn-action-block').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const handle = btn.getAttribute('data-handle');
+        const currentBlocked = btn.getAttribute('data-blocked') === '1';
+        const targetBlocked = !currentBlocked;
+
+        triggerClickSpark(e);
+
+        // 如果在特定状态视图下操作，触发 React Bits Collapse Exit 动画
+        const targetRow = document.getElementById(`blogger-row-${handle}`);
+        if (targetRow && ((bvCurrentStatus === 'active' && targetBlocked) || (bvCurrentStatus === 'blocked' && !targetBlocked))) {
+          targetRow.classList.add('is-collapsing');
+        }
+
+        try {
+          const res = await fetch('/api/admin/bloggers', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-admin-token': adminSessionToken
+            },
+            body: JSON.stringify({
+              screen_name: handle,
+              is_blocked: targetBlocked ? 1 : 0
+            })
+          });
+          const json = await res.json();
+
+          if (json.success) {
+            showToast(json.message || (targetBlocked ? `已屏蔽 @${handle}` : `已恢复 @${handle}`));
+            // 短暂延迟后刷新列表以保持准确性
+            setTimeout(() => {
+              loadBloggerVault();
+              updateHudArchiveCount();
+            }, 300);
+          } else {
+            targetRow?.classList.remove('is-collapsing');
+            showToast(`操作失败: ${json.error}`);
+          }
+        } catch (err) {
+          targetRow?.classList.remove('is-collapsing');
+          showToast(`请求异常: ${err.message}`);
+        }
+      });
+    });
+  }
+
+  function renderPagination(total, page, limit) {
+    if (!bloggerPaginationInfo || !bloggerPageIndicator) return;
+    const start = total === 0 ? 0 : (page - 1) * limit + 1;
+    const end = Math.min(page * limit, total);
+    bloggerPaginationInfo.textContent = `显示 ${start} - ${end} / 共 ${total} 位博主`;
+    bloggerPageIndicator.textContent = `第 ${page} / ${bvTotalPages} 页`;
+
+    if (btnPagePrev) btnPagePrev.disabled = page <= 1;
+    if (btnPageNext) btnPageNext.disabled = page >= bvTotalPages;
+  }
+
+  // 搜索防抖监听 (250ms)
+  bloggerSearchInput?.addEventListener('input', (e) => {
+    bvCurrentKeyword = e.target.value.trim();
+    if (bvCurrentKeyword) {
+      btnClearBloggerSearch?.classList.remove('hidden');
+    } else {
+      btnClearBloggerSearch?.classList.add('hidden');
+    }
+
+    clearTimeout(bvSearchDebounceTimer);
+    bvSearchDebounceTimer = setTimeout(() => {
+      bvCurrentPage = 1;
+      loadBloggerVault();
+    }, 250);
+  });
+
+  btnClearBloggerSearch?.addEventListener('click', () => {
+    if (bloggerSearchInput) bloggerSearchInput.value = '';
+    bvCurrentKeyword = '';
+    btnClearBloggerSearch.classList.add('hidden');
+    bvCurrentPage = 1;
+    loadBloggerVault();
+  });
+
+  // 状态筛选 Tab 切换
+  filterTabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterTabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      bvCurrentStatus = btn.getAttribute('data-status') || 'all';
+      bvCurrentPage = 1;
+      loadBloggerVault();
+    });
+  });
+
+  // 排序下拉切换
+  bloggerSortSelect?.addEventListener('change', (e) => {
+    bvCurrentSort = e.target.value;
+    bvCurrentPage = 1;
+    loadBloggerVault();
+  });
+
+  // 分页按钮
+  btnPagePrev?.addEventListener('click', () => {
+    if (bvCurrentPage > 1) {
+      bvCurrentPage--;
+      loadBloggerVault();
+    }
+  });
+
+  btnPageNext?.addEventListener('click', () => {
+    if (bvCurrentPage < bvTotalPages) {
+      bvCurrentPage++;
+      loadBloggerVault();
+    }
+  });
+
+  btnRefreshBloggers?.addEventListener('click', (e) => {
+    triggerClickSpark(e);
+    loadBloggerVault();
+    updateHudArchiveCount();
+    showToast('已刷新博主档案列表');
+  });
+
+  // 导出 Handle 清单 Modal
+  btnExportHandles?.addEventListener('click', async (e) => {
+    triggerClickSpark(e);
+    if (!modalExportHandles || !exportHandlesTextarea) return;
+
+    exportHandlesTextarea.value = '正在提取博主 Handle 列表...';
+    modalExportHandles.classList.remove('hidden');
+
+    try {
+      // 提取全部满足当前筛选条件的 handle
+      const params = new URLSearchParams({
+        keyword: bvCurrentKeyword,
+        status: bvCurrentStatus,
+        sort: bvCurrentSort,
+        page: 1,
+        limit: 1000
+      });
+      const res = await fetch(`/api/admin/bloggers?${params.toString()}`, {
+        headers: { 'x-admin-token': adminSessionToken }
+      });
+      const json = await res.json();
+
+      if (json.success && Array.isArray(json.data)) {
+        const handles = json.data.map(u => u.screen_name).filter(Boolean);
+        exportHandlesTextarea.value = handles.join('\n');
+      } else {
+        exportHandlesTextarea.value = '提取失败：' + (json.error || '未知错误');
+      }
+    } catch (err) {
+      exportHandlesTextarea.value = '提取异常：' + err.message;
+    }
+  });
+
+  btnCopyExportHandles?.addEventListener('click', (e) => {
+    if (!exportHandlesTextarea) return;
+    triggerClickSpark(e);
+    navigator.clipboard.writeText(exportHandlesTextarea.value);
+    showToast('已复制全部 Handle 清单到剪贴板');
   });
 
   // ==================== 7. Console Helper Script Modal ====================
