@@ -1422,8 +1422,9 @@ code, kbd {
   order: 5;
   margin: 0;
   margin-right: auto;
-  min-width: 145px;
-  width: auto;
+  min-width: unset;
+  width: fit-content;
+  padding: 3px 8px;
   white-space: nowrap;
   flex-shrink: 0;
 }
