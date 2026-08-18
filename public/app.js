@@ -838,6 +838,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const tierTag = isTopTier ? 'Top Creator' : 'Creator';
     const formattedBio = formatBioWithLinks(user.description);
 
+    const isSuspended = user.is_suspended === 1;
+    const isDeleted = user.is_suspended === 2;
+    let statusBadgeHtml = '';
+    if (isSuspended) {
+      statusBadgeHtml = `<span class="badge-status-pill suspended" title="X 官方账号已被封禁/冻结，历史档案已永久冷备份"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> 已封号</span>`;
+    } else if (isDeleted) {
+      statusBadgeHtml = `<span class="badge-status-pill deleted" title="X 官方账号已注销或不存在，历史档案已永久冷备份"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> 已注销</span>`;
+    }
+
     card.innerHTML = `
       <div class="card-header-banner" style="background-image: url('${coverSrc}');"></div>
       <div class="card-main-content">
@@ -852,6 +861,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="card-name-row">
             <span class="card-user-name" title="${escapeHtml(user.name)}">${escapeHtml(user.name)}</span>
             <span class="card-influence-pill ${isTopTier ? 'top-tier' : ''}">${escapeHtml(tierTag)}</span>
+            ${statusBadgeHtml}
           </div>
           <a class="card-user-handle" href="https://x.com/${user.screen_name}" target="_blank" onclick="event.stopPropagation();">@${escapeHtml(user.screen_name)}</a>
           <div class="card-metrics-chip">
@@ -1027,6 +1037,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const rawCover = user.cover_url || fallbackCovers[0];
     const cover = resolveMediaUrl(rawCover);
     const isTop = (user.followers_count >= 500000);
+    const isSuspended = user.is_suspended === 1;
+    const isDeleted = user.is_suspended === 2;
+    let memorialNotice = '';
+    if (isSuspended) {
+      memorialNotice = `
+        <div class="memorial-banner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          <div><strong>历史封存档案：</strong>该博主 X 官方账号已被封禁/冻结，此处的历史头像、简介与数据已永久冷备份留存。</div>
+        </div>
+      `;
+    } else if (isDeleted) {
+      memorialNotice = `
+        <div class="memorial-banner deleted">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div><strong>历史封存档案：</strong>该博主 X 官方账号已注销或不存在，历史数据已永久留档。</div>
+        </div>
+      `;
+    }
 
     drawerBody.innerHTML = `
       <div style="height: 140px; border-radius: var(--radius-md); background: url('${cover}') center/cover no-repeat; border: 1px solid var(--border-subtle); position: relative;">
@@ -1038,7 +1066,11 @@ document.addEventListener('DOMContentLoaded', () => {
           <img src="${avatar}" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--bg-elevated); box-shadow: var(--shadow-md); background: var(--bg-surface); object-fit: cover;">
           ${user.verified ? `<div class="badge-verified-native" style="bottom: 2px; right: 2px; width: 22px; height: 22px;" title="Twitter 官方认证">${ICONS.verifiedNative}</div>` : ''}
         </div>
-        <span class="card-influence-pill ${isTop ? 'top-tier' : ''}" style="font-size: 12px;">${isTop ? 'Top 头部创作者' : '精选创作者'}</span>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          ${isSuspended ? `<span class="badge-status-pill suspended">已封号</span>` : ''}
+          ${isDeleted ? `<span class="badge-status-pill deleted">已注销</span>` : ''}
+          <span class="card-influence-pill ${isTop ? 'top-tier' : ''}" style="font-size: 12px;">${isTop ? 'Top 头部创作者' : '精选创作者'}</span>
+        </div>
       </div>
 
       <div>
@@ -1050,6 +1082,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </button>
         </div>
       </div>
+
+      ${memorialNotice}
 
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); text-align: center;">
         <div>

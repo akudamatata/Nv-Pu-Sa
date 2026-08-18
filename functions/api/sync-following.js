@@ -408,11 +408,14 @@ export async function onRequestPost(context) {
         try {
           await db.prepare(`ALTER TABLE bloggers ADD COLUMN is_blocked INTEGER DEFAULT 0`).run();
         } catch (e) {}
+        try {
+          await db.prepare(`ALTER TABLE bloggers ADD COLUMN is_suspended INTEGER DEFAULT 0`).run();
+        } catch (e) {}
 
         const stmt = db.prepare(`
           INSERT INTO bloggers (
-            id, screen_name, name, avatar_url, cover_url, followers_count, description, verified, backed_up_at, is_blocked
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            id, screen_name, name, avatar_url, cover_url, followers_count, description, verified, backed_up_at, is_blocked, is_suspended
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
           ON CONFLICT(screen_name) DO UPDATE SET
             name = excluded.name,
             avatar_url = CASE WHEN excluded.avatar_url != '' THEN excluded.avatar_url ELSE bloggers.avatar_url END,
@@ -421,6 +424,7 @@ export async function onRequestPost(context) {
             description = excluded.description,
             verified = excluded.verified,
             is_blocked = COALESCE(bloggers.is_blocked, 0),
+            is_suspended = 0,
             backed_up_at = CASE 
               WHEN bloggers.backed_up_at IS NOT NULL AND bloggers.backed_up_at != '' 
               THEN bloggers.backed_up_at 

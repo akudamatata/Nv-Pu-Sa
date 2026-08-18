@@ -243,25 +243,21 @@
               </div>
             </div>
 
-            <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">
-              智能对比本地与云端数据，触发增量抓取，自动解析 Bio 链接与高清头像，去重落库。
-            </p>
-
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <div class="sync-action-row">
               <button id="btn-trigger-sync" class="btn-primary-action">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
                 <span>一键智能增量同步</span>
               </button>
-            </div>
 
-            <!-- Sync Live Progress Bar (Permanently docked to eliminate layout shifting) -->
-            <div id="sync-progress-box" class="sync-progress-box">
-              <div class="sync-progress-header">
-                <span id="sync-progress-status-text">增量同步引擎待命中</span>
-                <span id="sync-progress-count-text" style="font-family: var(--font-mono); color: var(--text-muted);">准备就绪</span>
-              </div>
-              <div class="sync-progress-track">
-                <div id="sync-progress-fill" class="sync-progress-fill" style="width: 0%;"></div>
+              <!-- Sync Live Progress Bar (Inline Docked) -->
+              <div id="sync-progress-box" class="sync-progress-box-inline">
+                <div class="sync-progress-header">
+                  <span id="sync-progress-status-text">增量同步引擎待命中</span>
+                  <span id="sync-progress-count-text" style="font-family: var(--font-mono); color: var(--text-muted);">准备就绪</span>
+                </div>
+                <div class="sync-progress-track">
+                  <div id="sync-progress-fill" class="sync-progress-fill" style="width: 0%;"></div>
+                </div>
               </div>
             </div>
 

@@ -2105,12 +2105,40 @@ code, kbd {
   border: 1px solid var(--border-subtle);
 }
 
-/* 62% : 38% 黄金分割 Executive Bento Grid */
+/* 62% : 38% 黄金分割 Executive Bento Grid (高度完全对齐) */
 .admin-bento-grid {
   display: grid;
   grid-template-columns: 1.62fr 1fr;
-  gap: 24px;
-  align-items: start;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.bento-col-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.bento-col-main .vault-panel-card {
+  margin-bottom: 0;
+}
+
+.bento-col-side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%;
+}
+
+.bento-col-side .vault-panel-card {
+  margin-bottom: 0;
+}
+
+.bento-col-side #panel-data-management {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .vault-panel-card {
@@ -2120,7 +2148,6 @@ code, kbd {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   padding: 22px 24px;
-  margin-bottom: 20px;
   box-shadow: var(--shadow-sm);
   transition: border-color 0.2s ease, transform 0.2s ease;
 }
@@ -2501,38 +2528,101 @@ code, kbd {
   width: 100%;
 }
 
-.sync-progress-box {
-  margin-top: 18px;
-  padding: 14px 16px;
+.sync-action-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.sync-action-row .btn-primary-action {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sync-progress-box-inline {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 14px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
   transition: all 0.25s ease;
 }
 
-.sync-progress-header {
+.sync-progress-box-inline .sync-progress-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
-.sync-progress-track {
+.sync-progress-box-inline .sync-progress-track {
   width: 100%;
-  height: 6px;
+  height: 5px;
   background: rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-full);
   overflow: hidden;
 }
 
-.sync-progress-fill {
+.sync-progress-box-inline .sync-progress-fill {
   height: 100%;
   width: 0%;
   background: linear-gradient(90deg, var(--accent-primary), var(--accent-gold));
   border-radius: var(--radius-full);
   transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.badge-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badge-status-pill.suspended {
+  background: hsla(350, 89%, 60%, 0.15);
+  border: 1px solid hsla(350, 89%, 60%, 0.35);
+  color: var(--accent-danger);
+}
+
+.badge-status-pill.deleted {
+  background: hsla(38, 92%, 50%, 0.15);
+  border: 1px solid hsla(38, 92%, 50%, 0.35);
+  color: var(--accent-gold);
+}
+
+.memorial-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px dashed hsla(350, 89%, 60%, 0.35);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  font-size: 12.5px;
+  color: var(--accent-danger);
+  line-height: 1.5;
+}
+
+.memorial-banner.deleted {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: hsla(38, 92%, 50%, 0.35);
+  color: var(--accent-gold);
 }
 
 .terminal-log-box.is-expanded {

@@ -911,6 +911,18 @@ document.addEventListener('DOMContentLoaded', () => {
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2.5" title="X 官方认证"><path d="M12 2l2.4 2.4 3.4-.4 1.2 3.2 3 1.6-1 3.2 1 3.2-3 1.6-1.2 3.2-3.4-.4L12 22l-2.4-2.4-3.4.4-1.2-3.2-3-1.6 1-3.2-1-3.2 3-1.6 1.2-3.2 3.4.4L12 2z"/><path d="m9 12 2 2 4-4"/></svg>
                 ` : ''}
                 <span class="blogger-row-handle">@${escapeHtml(u.screen_name)}</span>
+                ${u.is_suspended === 1 ? `
+                  <span class="badge-status-pill suspended" style="font-size: 10.5px; padding: 1px 6px;">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                    <span>已封号</span>
+                  </span>
+                ` : ''}
+                ${u.is_suspended === 2 ? `
+                  <span class="badge-status-pill deleted" style="font-size: 10.5px; padding: 1px 6px;">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span>已注销</span>
+                  </span>
+                ` : ''}
                 ${isBlocked ? `
                   <span class="badge-blocked-tag">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>

@@ -43,6 +43,9 @@ export async function onRequestGet({ request, env }) {
     try {
       await db.prepare(`ALTER TABLE bloggers ADD COLUMN is_blocked INTEGER DEFAULT 0`).run();
     } catch (e) {}
+    try {
+      await db.prepare(`ALTER TABLE bloggers ADD COLUMN is_suspended INTEGER DEFAULT 0`).run();
+    } catch (e) {}
 
     const url = new URL(request.url);
     const keyword = (url.searchParams.get('keyword') || '').trim();
