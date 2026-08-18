@@ -2105,22 +2105,29 @@ code, kbd {
   border: 1px solid var(--border-subtle);
 }
 
-/* 62% : 38% 黄金分割 Executive Bento Grid */
+/* 62% : 38% 黄金分割 Executive Bento Grid (左侧日志自适应填充满) */
 .admin-bento-grid {
   display: grid;
   grid-template-columns: 1.62fr 1fr;
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .bento-col-main {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  height: 100%;
 }
 
 .bento-col-main .vault-panel-card {
   margin-bottom: 0;
+}
+
+#panel-sync {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .bento-col-side {
@@ -2626,6 +2633,9 @@ code, kbd {
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .terminal-top {
@@ -2635,6 +2645,7 @@ code, kbd {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .t-dot {
@@ -2660,8 +2671,8 @@ code, kbd {
   font-family: var(--font-mono);
   line-height: 1.6;
   color: #e2e8f0;
-  height: 185px;
-  max-height: 185px;
+  flex: 1;
+  min-height: 280px;
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;
