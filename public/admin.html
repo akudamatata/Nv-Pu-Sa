@@ -252,11 +252,6 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
                 <span>一键智能增量同步</span>
               </button>
-
-              <button id="btn-show-console-helper" class="btn-secondary-action">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                <span>浏览器控制台助手脚本</span>
-              </button>
             </div>
 
             <!-- Sync Live Progress Bar (Permanently docked to eliminate layout shifting) -->
@@ -473,31 +468,6 @@
             <span>一键复制全部 Handle</span>
           </button>
           <button type="button" class="btn-secondary-action btn-close-modal">关闭</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Console Script Modal -->
-    <div id="modal-script" class="inspector-backdrop hidden">
-      <div class="auth-card-window" style="max-width: 600px; text-align: left;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-main);">控制台一键提取脚本</h3>
-          <button class="drawer-close-btn btn-close-modal" aria-label="关闭">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-        </div>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
-          在已登录的 <code>x.com/following</code> 页面按 <code>F12</code> 打开控制台粘贴代码运行：
-        </p>
-        <div class="terminal-log-box" style="margin-top: 0;">
-          <pre id="modal-script-code" class="terminal-content" style="max-height: 240px;">加载脚本中...</pre>
-        </div>
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
-          <button id="btn-copy-code" class="btn-primary-action">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-            <span>复制一键脚本</span>
-          </button>
-          <button class="btn-secondary-action btn-close-modal">关闭</button>
         </div>
       </div>
     </div>

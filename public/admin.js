@@ -102,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Sync Engine
   const btnTriggerSync = document.getElementById('btn-trigger-sync');
-  const btnShowConsoleHelper = document.getElementById('btn-show-console-helper');
   const syncProgressBox = document.getElementById('sync-progress-box');
   const syncProgressStatusText = document.getElementById('sync-progress-status-text');
   const syncProgressCountText = document.getElementById('sync-progress-count-text');
@@ -115,11 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnImportJson = document.getElementById('btn-import-json');
   const btnResetD1 = document.getElementById('btn-reset-d1');
   const fileInputBackup = document.getElementById('file-input-backup');
-
-  // Modal
-  const modalScript = document.getElementById('modal-script');
-  const modalScriptCode = document.getElementById('modal-script-code');
-  const btnCopyCode = document.getElementById('btn-copy-code');
   const toastContainer = document.getElementById('toast-container');
 
   // Top HUD Ribbon Elements
@@ -1091,37 +1085,11 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('已复制全部 Handle 清单到剪贴板');
   });
 
-  // ==================== 7. Console Helper Script Modal ====================
-  const helperScriptCode = `(async function() {
-  console.log("🚀 开始抓取关注博主数据...");
-  // 提取当前页面博主
-  const users = [];
-  document.querySelectorAll('[data-testid="UserCell"]').forEach(cell => {
-    const nameEl = cell.querySelector('div[dir="ltr"] span');
-    const handleEl = cell.querySelector('a[href^="/"]');
-    if (nameEl && handleEl) {
-      users.push({
-        name: nameEl.textContent,
-        screen_name: handleEl.getAttribute('href').replace('/', '')
-      });
-    }
-  });
-  console.log("[FOLLOW-SPIDER] 抓取到 " + users.length + " 位博主");
-  console.save(users, "x_followings.json");
-})();`;
-
-  btnShowConsoleHelper?.addEventListener('click', () => {
-    modalScriptCode.textContent = helperScriptCode;
-    modalScript.classList.remove('hidden');
-  });
-
+  // Modal Universal Close Handler
   document.querySelectorAll('.btn-close-modal').forEach(btn => {
-    btn.addEventListener('click', () => modalScript.classList.add('hidden'));
-  });
-
-  btnCopyCode?.addEventListener('click', () => {
-    navigator.clipboard.writeText(helperScriptCode);
-    showToast('已复制助手脚本到剪贴板');
+    btn.addEventListener('click', () => {
+      modalExportHandles?.classList.add('hidden');
+    });
   });
 
   // ==================== 8. Toast Notifications ====================
