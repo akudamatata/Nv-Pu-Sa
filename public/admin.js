@@ -111,7 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // GitHub Actions & Cloud Tasks
   const btnTriggerGhFullSync = document.getElementById('btn-trigger-gh-full-sync');
-  const btnTriggerGhRefollow = document.getElementById('btn-trigger-gh-refollow');
 
   // Backup & Restore
   const btnExportJson = document.getElementById('btn-export-json');
@@ -667,18 +666,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==================== 6.3 GitHub Actions Cloud Dispatch Handlers ====================
-  async function triggerGhAction(actionType, btnEl, originalHtml) {
+  async function triggerGhAction(btnEl, originalHtml) {
     if (!adminSessionToken) {
       showToast('请先登录 Admin 授权');
       return;
     }
 
-    const taskName = actionType === 'refollow' ? '超慢速拟人回关 (防封)' : '全量数据深度刷新';
     btnEl.disabled = true;
     const spinnerHtml = `<div class="btn-task-content"><div class="btn-task-title-row"><div class="skeleton-spinner" style="width:13px;height:13px;border-width:1.8px;"></div><span>正在派发云端任务...</span></div></div>`;
     btnEl.innerHTML = spinnerHtml;
 
-    logTerminal(`[GITHUB ACTIONS] 正在向 GitHub 发起【${taskName}】工作流调度请求...`);
+    logTerminal(`[GITHUB ACTIONS] 正在向 GitHub 发起【全量数据深度刷新】工作流调度请求...`);
 
     try {
       const res = await fetch('/api/admin/trigger-action', {
@@ -687,7 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'Content-Type': 'application/json',
           'x-admin-token': adminSessionToken
         },
-        body: JSON.stringify({ action: actionType })
+        body: JSON.stringify({ action: 'full_sync' })
       });
       const json = await res.json();
 
@@ -712,13 +710,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnTriggerGhFullSync?.addEventListener('click', (e) => {
     triggerClickSpark(e);
     const originalHtml = btnTriggerGhFullSync.innerHTML;
-    triggerGhAction('full_sync', btnTriggerGhFullSync, originalHtml);
-  });
-
-  btnTriggerGhRefollow?.addEventListener('click', (e) => {
-    triggerClickSpark(e);
-    const originalHtml = btnTriggerGhRefollow.innerHTML;
-    triggerGhAction('refollow', btnTriggerGhRefollow, originalHtml);
+    triggerGhAction(btnTriggerGhFullSync, originalHtml);
   });
 
   // ==================== 6.5 Blogger Vault Management & Shield Controller (React Bits Motion) ====================

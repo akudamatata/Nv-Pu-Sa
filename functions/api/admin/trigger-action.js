@@ -50,7 +50,7 @@ export async function onRequestPost({ request, env }) {
 
     const repoOwner = 'akudamatata';
     const repoName = 'Nv-Pu-Sa';
-    const workflowFile = actionType === 'refollow' ? 're-follow.yml' : 'full-sync.yml';
+    const workflowFile = 'full-sync.yml';
 
     const dispatchUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/actions/workflows/${workflowFile}/dispatches`;
 
@@ -68,11 +68,9 @@ export async function onRequestPost({ request, env }) {
     });
 
     if (ghRes.status === 204) {
-      const taskName = actionType === 'refollow' ? '极慢速拟人回关 (防封)' : '全量数据深度刷新';
       return Response.json({
         success: true,
-        message: `🚀 已成功向 GitHub 派发【${taskName}】离线任务！`,
-        action: actionType,
+        message: `🚀 已成功向 GitHub 派发【全量数据深度刷新】离线任务！`,
         actions_url: `https://github.com/${repoOwner}/${repoName}/actions`
       });
     }

@@ -300,24 +300,14 @@
                   <span>GitHub Actions 离线任务 (脱机慢速)</span>
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
                   <button id="btn-trigger-gh-full-sync" class="btn-primary-action full-w btn-task-card">
                     <div class="btn-task-content">
                       <div class="btn-task-title-row">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
                         <span>派发全量数据深度刷新</span>
                       </div>
-                      <span class="btn-task-desc">云端后台慢速巡检全量博主，刷新资料与 R2 缓存</span>
-                    </div>
-                  </button>
-
-                  <button id="btn-trigger-gh-refollow" class="btn-secondary-action full-w btn-task-card">
-                    <div class="btn-task-content">
-                      <div class="btn-task-title-row">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-spark)" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>
-                        <span>派发超慢速拟人回关 (防封)</span>
-                      </div>
-                      <span class="btn-task-desc">25s~45s 拟人随机大间隔 + 批次休眠，彻底规避 Limit</span>
+                      <span class="btn-task-desc">云端后台逐页慢速巡检全量博主，刷新资料与 R2 缓存</span>
                     </div>
                   </button>
 
