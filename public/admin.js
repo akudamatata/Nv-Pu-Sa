@@ -766,9 +766,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function resolveMediaUrl(url) {
     if (!url) return '';
-    if (url.startsWith('/api/media?key=')) return url;
-    if (url.includes('pbs.twimg.com') || url.includes('abs.twimg.com')) {
-      return `/api/media?key=${encodeURIComponent(url)}`;
+    if (url.startsWith('/api/media') || url.startsWith('data:') || url.startsWith('/')) {
+      return url;
+    }
+    if (url.includes('twimg.com')) {
+      return `/api/media?url=${encodeURIComponent(url)}`;
     }
     return url;
   }
@@ -843,9 +845,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const defaultFallbackAvatar = '/api/media?url=' + encodeURIComponent('https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png');
+
     bloggerListContainer.innerHTML = users.map((u, idx) => {
       const isBlocked = u.is_blocked === 1;
-      const avatarSrc = resolveMediaUrl(u.avatar_url) || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
+      const avatarSrc = resolveMediaUrl(u.avatar_url) || defaultFallbackAvatar;
       const backupDate = u.backed_up_at ? new Date(u.backed_up_at).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '未记录';
       const staggerDelay = (idx * 0.02).toFixed(2);
 
@@ -853,7 +857,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="blogger-row ${isBlocked ? 'is-blocked' : ''}" id="blogger-row-${escapeHtml(u.screen_name)}" style="animation-delay: ${staggerDelay}s;">
           <div class="blogger-row-left">
             <div class="blogger-row-avatar-box">
-              <img class="blogger-row-avatar" src="${escapeHtml(avatarSrc)}" alt="${escapeHtml(u.name)}" loading="lazy" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png'">
+              <img class="blogger-row-avatar" src="${escapeHtml(avatarSrc)}" alt="${escapeHtml(u.name)}" loading="lazy" onerror="this.onerror=null; this.src='${escapeHtml(defaultFallbackAvatar)}'">
             </div>
             <div class="blogger-row-info">
               <div class="blogger-name-line">
