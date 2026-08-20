@@ -102,7 +102,30 @@ document.addEventListener('DOMContentLoaded', () => {
   sampleCanvas.height = 16;
   const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
 
-  function extractDominantColor(img) {
+  const VIBRANT_ACCENTS = [
+    '236, 72, 153',   // Neon Pink
+    '245, 158, 11',   // Amber Gold
+    '168, 85, 247',   // Purple Violet
+    '16, 185, 129',   // Emerald Green
+    '14, 165, 233',   // Sky Cyan
+    '244, 63, 94',    // Rose Red
+    '99, 102, 241',   // Indigo
+    '217, 70, 239',   // Fuchsia
+    '20, 184, 166',   // Teal
+    '249, 115, 22'    // Orange Flame
+  ];
+
+  function getFallbackAccent(key) {
+    let hash = 0;
+    const str = String(key || 'creator');
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return VIBRANT_ACCENTS[Math.abs(hash) % VIBRANT_ACCENTS.length];
+  }
+
+  function extractDominantColor(img, defaultKey = 'creator') {
     try {
       sampleCtx.clearRect(0, 0, 16, 16);
       sampleCtx.drawImage(img, 0, 0, 16, 16);
@@ -122,10 +145,10 @@ document.addEventListener('DOMContentLoaded', () => {
         b += pb;
         validPixels++;
       }
-      if (validPixels === 0) return '56, 189, 248';
+      if (validPixels === 0) return getFallbackAccent(defaultKey);
       return `${Math.round(r / validPixels)}, ${Math.round(g / validPixels)}, ${Math.round(b / validPixels)}`;
     } catch (e) {
-      return '56, 189, 248';
+      return getFallbackAccent(defaultKey);
     }
   }
 
@@ -940,12 +963,17 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
 
-    // Dynamic Ambient Color Extraction
+    // Initialize deterministic vibrant palette immediately
+    const initialRgb = isTombstone ? '148, 163, 184' : getFallbackAccent(user.screen_name || user.name);
+    card.style.setProperty('--card-accent-rgb', initialRgb);
+    card.style.setProperty('--card-accent', `rgb(${initialRgb})`);
+
+    // Dynamic Ambient Color Refinement on Image Load
     if (!isTombstone) {
       const avatarImg = card.querySelector('.card-avatar-img');
       if (avatarImg) {
         const applyColor = () => {
-          const rgb = extractDominantColor(avatarImg);
+          const rgb = extractDominantColor(avatarImg, user.screen_name);
           card.style.setProperty('--card-accent-rgb', rgb);
           card.style.setProperty('--card-accent', `rgb(${rgb})`);
         };
@@ -955,9 +983,6 @@ document.addEventListener('DOMContentLoaded', () => {
           avatarImg.addEventListener('load', applyColor, { once: true });
         }
       }
-    } else {
-      card.style.setProperty('--card-accent-rgb', '148, 163, 184');
-      card.style.setProperty('--card-accent', '#94a3b8');
     }
 
     attachSpotlightEffect(card);
@@ -1258,11 +1283,15 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
 
-    // Dynamic color extraction on drawer avatar
+    // Initialize drawer ambient tint immediately
+    const initialDrawerRgb = isTombstone ? '148, 163, 184' : getFallbackAccent(user.screen_name || user.name);
+    drawerBody.style.setProperty('--card-accent-rgb', initialDrawerRgb);
+    drawerBody.style.setProperty('--card-accent', `rgb(${initialDrawerRgb})`);
+
     const drawerAvatarImg = drawerBody.querySelector('.polaroid-avatar-img');
     if (drawerAvatarImg && !isTombstone) {
       const applyDrawerColor = () => {
-        const rgb = extractDominantColor(drawerAvatarImg);
+        const rgb = extractDominantColor(drawerAvatarImg, user.screen_name);
         drawerBody.style.setProperty('--card-accent-rgb', rgb);
         drawerBody.style.setProperty('--card-accent', `rgb(${rgb})`);
       };
@@ -1271,9 +1300,6 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         drawerAvatarImg.addEventListener('load', applyDrawerColor, { once: true });
       }
-    } else {
-      drawerBody.style.setProperty('--card-accent-rgb', '148, 163, 184');
-      drawerBody.style.setProperty('--card-accent', '#94a3b8');
     }
 
     // Copy Handle Handler
