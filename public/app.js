@@ -102,18 +102,55 @@ document.addEventListener('DOMContentLoaded', () => {
   sampleCanvas.height = 16;
   const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
 
+  // 12 Evenly Distributed Spectral Neon Accents for Creators
   const VIBRANT_ACCENTS = [
-    '236, 72, 153',   // Neon Pink
-    '245, 158, 11',   // Amber Gold
-    '168, 85, 247',   // Purple Violet
-    '16, 185, 129',   // Emerald Green
-    '14, 165, 233',   // Sky Cyan
-    '244, 63, 94',    // Rose Red
-    '99, 102, 241',   // Indigo
-    '217, 70, 239',   // Fuchsia
-    '20, 184, 166',   // Teal
-    '249, 115, 22'    // Orange Flame
+    '244, 63, 94',    // Rose Red (350°)
+    '236, 72, 153',   // Neon Pink (330°)
+    '217, 70, 239',   // Vivid Fuchsia (290°)
+    '168, 85, 247',   // Electric Purple (270°)
+    '129, 140, 248',  // Periwinkle Indigo (235°)
+    '14, 165, 233',   // Sky Cyan (195°)
+    '20, 184, 166',   // Mint Teal (175°)
+    '16, 185, 129',   // Emerald Green (150°)
+    '132, 204, 22',   // Lime Green (85°)
+    '245, 158, 11',   // Amber Gold (40°)
+    '249, 115, 22',   // Orange Flame (25°)
+    '239, 68, 68'     // Ruby Crimson (0°)
   ];
+
+  function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h *= 60;
+    }
+    return [h, s, l];
+  }
+
+  function hslToRgb(h, s, l) {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    const r = hue2rgb(p, q, h / 360 + 1/3);
+    const g = hue2rgb(p, q, h / 360);
+    const b = hue2rgb(p, q, h / 360 - 1/3);
+    return `${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}`;
+  }
 
   function getFallbackAccent(key) {
     let hash = 0;
@@ -125,28 +162,54 @@ document.addEventListener('DOMContentLoaded', () => {
     return VIBRANT_ACCENTS[Math.abs(hash) % VIBRANT_ACCENTS.length];
   }
 
+  // Chrominance-Peak HSL Dominant Color Extractor
   function extractDominantColor(img, defaultKey = 'creator') {
     try {
       sampleCtx.clearRect(0, 0, 16, 16);
       sampleCtx.drawImage(img, 0, 0, 16, 16);
       const imgData = sampleCtx.getImageData(0, 0, 16, 16).data;
-      let r = 0, g = 0, b = 0, validPixels = 0;
-      for (let i = 0; i < imgData.length; i += 8) {
+      const buckets = new Array(12).fill(0);
+      const hueSums = new Array(12).fill(0);
+      let totalVibrantWeight = 0;
+
+      for (let i = 0; i < imgData.length; i += 4) {
         const pr = imgData[i];
         const pg = imgData[i + 1];
         const pb = imgData[i + 2];
         const pa = imgData[i + 3];
         if (pa < 100) continue;
-        const max = Math.max(pr, pg, pb);
-        const min = Math.min(pr, pg, pb);
-        if (max - min < 12 && (max > 225 || max < 30)) continue;
-        r += pr;
-        g += pg;
-        b += pb;
-        validPixels++;
+
+        const [h, s, l] = rgbToHsl(pr, pg, pb);
+        // Ignore gray, pure white, pure black
+        if (s < 0.18 || l < 0.12 || l > 0.90) continue;
+
+        // Exponential weight for high-chroma pixels (e.g. neon, hair, apparel, background highlights)
+        const weight = Math.pow(s, 2.2) * (1 - Math.abs(l - 0.5) * 1.4);
+        const bIdx = Math.floor(h / 30) % 12;
+        buckets[bIdx] += weight;
+        hueSums[bIdx] += h * weight;
+        totalVibrantWeight += weight;
       }
-      if (validPixels === 0) return getFallbackAccent(defaultKey);
-      return `${Math.round(r / validPixels)}, ${Math.round(g / validPixels)}, ${Math.round(b / validPixels)}`;
+
+      if (totalVibrantWeight < 0.1) {
+        return getFallbackAccent(defaultKey);
+      }
+
+      let bestBucket = -1, maxWeight = 0;
+      for (let i = 0; i < 12; i++) {
+        if (buckets[i] > maxWeight) {
+          maxWeight = buckets[i];
+          bestBucket = i;
+        }
+      }
+
+      if (bestBucket === -1 || buckets[bestBucket] === 0) {
+        return getFallbackAccent(defaultKey);
+      }
+
+      const winningHue = Math.round(hueSums[bestBucket] / buckets[bestBucket]);
+      // Optimize vibrancy for OLED: high saturation (82%) and optimal lightness (58%)
+      return hslToRgb(winningHue, 0.82, 0.58);
     } catch (e) {
       return getFallbackAccent(defaultKey);
     }
