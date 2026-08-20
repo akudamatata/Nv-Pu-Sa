@@ -1101,6 +1101,8 @@ code, kbd {
 }
 
 .blogger-card {
+  --card-accent: var(--accent-primary);
+  --card-accent-rgb: 56, 189, 248;
   background: var(--bg-surface);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -1110,7 +1112,8 @@ code, kbd {
   box-shadow: var(--shadow-sm);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
               box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
-              border-color 0.25s ease;
+              border-color 0.25s ease,
+              filter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   cursor: pointer;
   width: 100%;
@@ -1124,8 +1127,42 @@ code, kbd {
 
 .blogger-card:hover {
   transform: translateY(-4px);
-  border-color: var(--border-medium);
-  box-shadow: var(--shadow-md);
+  border-color: rgba(var(--card-accent-rgb), 0.45);
+  box-shadow: 0 0 0 1px rgba(var(--card-accent-rgb), 0.3), 0 16px 36px -6px rgba(var(--card-accent-rgb), 0.16);
+}
+
+.card-ambient-glow {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(var(--card-accent-rgb), 0.22) 0%, transparent 65%);
+}
+
+.blogger-card:hover .card-ambient-glow {
+  opacity: 1;
+}
+
+/* 赛博遗迹 (Tombstone Mode) */
+.blogger-card.is-tombstone {
+  filter: grayscale(85%) brightness(0.82);
+}
+
+.blogger-card.is-tombstone:hover {
+  filter: grayscale(25%) brightness(0.95);
+  border-color: rgba(148, 163, 184, 0.45);
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.3), 0 14px 32px -4px rgba(148, 163, 184, 0.15);
+}
+
+.tombstone-banner-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.4) 0%, rgba(0, 0, 0, 0.8) 100%);
+  backdrop-filter: grayscale(50%);
+  z-index: 1;
 }
 
 .card-header-banner {
@@ -1940,6 +1977,529 @@ code, kbd {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+/* --------------------------------------------------------------------------
+   9.1 Polaroid Time Capsule & Mutation Timeline Drawer Styling
+   -------------------------------------------------------------------------- */
+.polaroid-capsule-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.polaroid-header-wrap {
+  position: relative;
+  height: 160px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+.polaroid-banner-img {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: var(--bg-surface-hover);
+  position: relative;
+  transition: transform 0.4s ease;
+}
+
+.polaroid-banner-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.75) 100%);
+}
+
+.polaroid-stamp {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  transform: rotate(3deg);
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1.5px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  text-align: center;
+  user-select: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  animation: stampPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes stampPop {
+  0% { transform: scale(0.8) rotate(-4deg); opacity: 0; }
+  100% { transform: scale(1) rotate(3deg); opacity: 1; }
+}
+
+.stamp-title {
+  display: block;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+}
+
+.stamp-id {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 1px 0;
+}
+
+.stamp-date {
+  display: block;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: var(--font-mono);
+}
+
+.polaroid-profile-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: -46px;
+  padding: 0 6px;
+  position: relative;
+  z-index: 2;
+}
+
+.polaroid-avatar-wrap {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  padding: 3px;
+  background: var(--bg-elevated);
+  box-shadow: 0 8px 24px -2px rgba(var(--card-accent-rgb, 56, 189, 248), 0.4);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.polaroid-avatar-wrap:hover {
+  transform: scale(1.05);
+}
+
+.polaroid-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  background: var(--bg-surface);
+}
+
+.polaroid-tags-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.polaroid-name-block {
+  margin-top: 2px;
+}
+
+.polaroid-user-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.polaroid-handle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.polaroid-handle-text {
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.btn-chip-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  background: var(--bg-chip);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-chip-copy:hover {
+  color: var(--text-main);
+  background: var(--bg-surface-hover);
+  border-color: var(--border-medium);
+}
+
+/* 4-Cell Metric Grid */
+.polaroid-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 12px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.metric-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.metric-val {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.metric-val.is-verified {
+  color: var(--accent-verified);
+}
+
+.metric-val.highlight {
+  color: var(--accent-primary);
+}
+
+.metric-lbl {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
+/* Bio Section */
+.polaroid-bio-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.section-title-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.polaroid-bio-card {
+  padding: 14px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.polaroid-bio-card a {
+  color: var(--accent-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 500;
+}
+
+/* Profile Mutation Timeline Accordion */
+.polaroid-history-accordion {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.polaroid-history-accordion[open] {
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-sm);
+}
+
+.polaroid-history-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  list-style: none;
+}
+
+.polaroid-history-summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent-primary);
+}
+
+.summary-arrow {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.polaroid-history-accordion[open] .summary-arrow {
+  transform: rotate(180deg);
+}
+
+.polaroid-history-content {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.timeline-loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.timeline-item {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-left: 20px;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 14px;
+  bottom: -16px;
+  width: 2px;
+  background: var(--border-subtle);
+}
+
+.timeline-item:last-child::before {
+  display: none;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 2px solid var(--accent-primary);
+  z-index: 1;
+}
+
+.timeline-dot.active {
+  background: var(--accent-primary);
+  box-shadow: 0 0 10px var(--accent-primary-glow);
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.timeline-type {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.timeline-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.timeline-diff {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
+.diff-line {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.diff-del {
+  background: hsla(0, 84%, 60%, 0.12);
+  color: #f87171;
+  text-decoration: line-through;
+}
+
+.diff-add {
+  background: hsla(152, 69%, 45%, 0.12);
+  color: #34d399;
+}
+
+.diff-tag {
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.timeline-desc {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.timeline-empty-hint {
+  padding: 10px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Memorial Banner & Candle Actions */
+.memorial-banner {
+  padding: 14px 16px;
+  background: hsla(0, 0%, 15%, 0.45);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(10px);
+  color: var(--text-secondary);
+}
+
+.memorial-banner.deleted {
+  background: hsla(215, 25%, 15%, 0.45);
+}
+
+.memorial-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.memorial-banner p {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.memorial-actions {
+  margin-top: 10px;
+}
+
+.btn-send-candle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f59e0b;
+  background: hsla(38, 92%, 50%, 0.12);
+  border: 1px solid hsla(38, 92%, 50%, 0.35);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-send-candle:hover {
+  background: hsla(38, 92%, 50%, 0.22);
+  transform: translateY(-1px);
+  box-shadow: 0 0 16px hsla(38, 92%, 50%, 0.35);
+}
+
+/* Polaroid Actions Row */
+.polaroid-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.btn-drawer-primary {
+  flex: 1.2;
+  padding: 12px 18px;
+  background: var(--accent-primary);
+  color: #000000;
+  font-weight: 700;
+  font-size: 13.5px;
+  border-radius: var(--radius-full);
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: var(--shadow-glow);
+  transition: all 0.2s ease;
+}
+
+.btn-drawer-primary:hover {
+  background: var(--accent-primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-drawer-secondary {
+  flex: 1;
+  padding: 12px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: var(--radius-full);
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-drawer-secondary:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-medium);
 }
 
 /* --------------------------------------------------------------------------

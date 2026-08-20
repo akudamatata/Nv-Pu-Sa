@@ -411,6 +411,19 @@ export async function onRequestPost(context) {
         try {
           await db.prepare(`ALTER TABLE bloggers ADD COLUMN is_suspended INTEGER DEFAULT 0`).run();
         } catch (e) {}
+        try {
+          await db.prepare(`
+            CREATE TABLE IF NOT EXISTS blogger_history (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              id_str TEXT NOT NULL,
+              field TEXT NOT NULL,
+              old_value TEXT,
+              new_value TEXT,
+              changed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+          `).run();
+          await db.prepare(`CREATE INDEX IF NOT EXISTS idx_blogger_history_id_str ON blogger_history(id_str)`).run();
+        } catch (e) {}
 
         const stmt = db.prepare(`
           INSERT INTO bloggers (

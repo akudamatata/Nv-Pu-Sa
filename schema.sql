@@ -33,5 +33,19 @@ CREATE TABLE IF NOT EXISTS archived_bloggers (
   avatar_url TEXT,
   cover_url TEXT,
   category TEXT,
+  is_blocked INTEGER DEFAULT 0,
+  is_suspended INTEGER DEFAULT 0,
   backed_up_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 4. 博主变迁历史档案表 (Profile Mutation Timeline)
+CREATE TABLE IF NOT EXISTS blogger_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id_str TEXT NOT NULL,
+  field TEXT NOT NULL,
+  old_value TEXT,
+  new_value TEXT,
+  changed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_blogger_history_id_str ON blogger_history(id_str);
+

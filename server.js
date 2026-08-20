@@ -138,6 +138,16 @@ app.get('/api/admin/credentials', requireAdmin, (req, res) => {
   return res.json({ success: true, hasCredentials: false });
 });
 
+// 查询博主时光变迁历史档案 API
+app.get('/api/history', (req, res) => {
+  const { id, id_str, screen_name } = req.query;
+  const targetId = id || id_str || screen_name;
+  if (!targetId) {
+    return res.status(400).json({ success: false, error: '缺少 id 或 screen_name 参数' });
+  }
+  res.json({ success: true, data: [] });
+});
+
 // 覆盖/重置保存本地数据库 (受保护)
 app.post('/api/archive', requireAdmin, (req, res) => {
   const { data } = req.body;

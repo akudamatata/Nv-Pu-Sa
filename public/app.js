@@ -81,13 +81,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   ];
 
-  // SVG Icon Templates (Iconify / Lucide Standard)
+  // SVG Icon Templates (Iconify / Lucide & Phosphor Standard)
   const ICONS = {
     verifiedNative: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"/></svg>`,
     users: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
     external: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`,
-    eye: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`
+    eye: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    ghost: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/></svg>`,
+    history: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>`,
+    stamp: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>`,
+    candle: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c-.5 2.5-2 3.5-2 5a2 2 0 0 0 4 0c0-1.5-1.5-2.5-2-5z"/><path d="M8 11h8v10H8z"/></svg>`,
+    markdown: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="7 15 7 9 10 12 13 9 13 15"/><polyline points="18 12 16 14 16 10"/></svg>`,
+    copy: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="13" height="13" x="9" y="9" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+    chevronDown: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>`
   };
+
+  // Canvas Color Extraction Engine for Dynamic Ambient Glow
+  const sampleCanvas = document.createElement('canvas');
+  sampleCanvas.width = 16;
+  sampleCanvas.height = 16;
+  const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+
+  function extractDominantColor(img) {
+    try {
+      sampleCtx.clearRect(0, 0, 16, 16);
+      sampleCtx.drawImage(img, 0, 0, 16, 16);
+      const imgData = sampleCtx.getImageData(0, 0, 16, 16).data;
+      let r = 0, g = 0, b = 0, validPixels = 0;
+      for (let i = 0; i < imgData.length; i += 8) {
+        const pr = imgData[i];
+        const pg = imgData[i + 1];
+        const pb = imgData[i + 2];
+        const pa = imgData[i + 3];
+        if (pa < 100) continue;
+        const max = Math.max(pr, pg, pb);
+        const min = Math.min(pr, pg, pb);
+        if (max - min < 12 && (max > 225 || max < 30)) continue;
+        r += pr;
+        g += pg;
+        b += pb;
+        validPixels++;
+      }
+      if (validPixels === 0) return '56, 189, 248';
+      return `${Math.round(r / validPixels)}, ${Math.round(g / validPixels)}, ${Math.round(b / validPixels)}`;
+    } catch (e) {
+      return '56, 189, 248';
+    }
+  }
 
   // ==================== 1. Canvas Starfield Particles Background ====================
   function initCanvasParticles() {
@@ -204,6 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const badgeCountAll = document.getElementById('badge-count-all');
   const badgeCountVerified = document.getElementById('badge-count-verified');
   const badgeCountRecent = document.getElementById('badge-count-recent');
+  const badgeCountLost = document.getElementById('badge-count-lost');
   const resultsCountText = document.getElementById('results-count-text');
   const btnResetFilters = document.getElementById('btn-reset-filters');
 
@@ -527,6 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
       badgeCountAll.textContent = '0';
       badgeCountVerified.textContent = '0';
       if (badgeCountRecent) badgeCountRecent.textContent = '0';
+      if (badgeCountLost) badgeCountLost.textContent = '0';
       return;
     }
 
@@ -546,9 +588,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return !isNaN(t) && (now - t) <= sevenDaysMs;
     }).length;
 
+    const lostCount = state.rawUsers.filter(u => u.is_suspended === 1 || u.is_suspended === 2).length;
+
     badgeCountAll.textContent = total.toString();
     badgeCountVerified.textContent = verifiedCount.toString();
     if (badgeCountRecent) badgeCountRecent.textContent = (recentCount || Math.min(total, 5)).toString();
+    if (badgeCountLost) badgeCountLost.textContent = lostCount.toString();
   }
 
   function resolveMediaUrl(url) {
@@ -626,6 +671,8 @@ document.addEventListener('DOMContentLoaded', () => {
         matchesFilter = (user.followers_count || 0) >= 100000;
       } else if (state.currentFilter === 'recent') {
         matchesFilter = true;
+      } else if (state.currentFilter === 'lost') {
+        matchesFilter = (user.is_suspended === 1 || user.is_suspended === 2);
       }
 
       return matchesQuery && matchesFilter;
@@ -823,7 +870,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function createBloggerCardElement(user, idx) {
     const card = document.createElement('div');
-    card.className = 'blogger-card';
+    const isSuspended = user.is_suspended === 1;
+    const isDeleted = user.is_suspended === 2;
+    const isTombstone = isSuspended || isDeleted;
+
+    card.className = `blogger-card ${isTombstone ? 'is-tombstone' : ''}`;
     card.setAttribute('role', 'article');
     card.setAttribute('tabindex', '0');
     card.style.animationDelay = `${Math.min(idx * 20, 250)}ms`;
@@ -841,21 +892,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const tierTag = isTopTier ? 'Top Creator' : 'Creator';
     const formattedBio = formatBioWithLinks(user.description);
 
-    const isSuspended = user.is_suspended === 1;
-    const isDeleted = user.is_suspended === 2;
     let statusBadgeHtml = '';
     if (isSuspended) {
-      statusBadgeHtml = `<span class="badge-status-pill suspended" title="X 官方账号已被封禁/冻结，历史档案已永久冷备份"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> 已封号</span>`;
+      statusBadgeHtml = `<span class="badge-status-pill suspended" title="X 官方账号已被封禁/冻结，历史档案已永久冷备份">${ICONS.ghost} 已封号</span>`;
     } else if (isDeleted) {
-      statusBadgeHtml = `<span class="badge-status-pill deleted" title="X 官方账号已注销或不存在，历史档案已永久冷备份"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> 已注销</span>`;
+      statusBadgeHtml = `<span class="badge-status-pill deleted" title="X 官方账号已注销或不存在，历史档案已永久冷备份">${ICONS.ghost} 已注销</span>`;
     }
 
     card.innerHTML = `
-      <div class="card-header-banner" style="background-image: url('${coverSrc}');"></div>
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner" style="background-image: url('${coverSrc}');">
+        ${isTombstone ? '<div class="tombstone-banner-veil"></div>' : ''}
+      </div>
       <div class="card-main-content">
         <div class="card-avatar-row">
           <div class="card-avatar-wrap">
-            <img class="card-avatar-img" src="${avatarSrc}" alt="${escapeHtml(user.name)}" loading="lazy" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';">
+            <img class="card-avatar-img" src="${avatarSrc}" alt="${escapeHtml(user.name)}" loading="lazy" crossorigin="anonymous" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';">
             ${user.verified ? `<div class="badge-verified-native" title="Twitter 官方认证">${ICONS.verifiedNative}</div>` : ''}
           </div>
         </div>
@@ -879,14 +931,34 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="card-action-footer">
         <button class="btn-inspect-profile" type="button">
           ${ICONS.eye}
-          <span>档案详情</span>
+          <span>时光档案</span>
         </button>
         <a class="btn-visit-x" href="https://x.com/${user.screen_name}" target="_blank" onclick="event.stopPropagation();">
-          <span>访问 X</span>
+          <span>${isTombstone ? '原主页' : '访问 X'}</span>
           ${ICONS.external}
         </a>
       </div>
     `;
+
+    // Dynamic Ambient Color Extraction
+    if (!isTombstone) {
+      const avatarImg = card.querySelector('.card-avatar-img');
+      if (avatarImg) {
+        const applyColor = () => {
+          const rgb = extractDominantColor(avatarImg);
+          card.style.setProperty('--card-accent-rgb', rgb);
+          card.style.setProperty('--card-accent', `rgb(${rgb})`);
+        };
+        if (avatarImg.complete && avatarImg.naturalWidth !== 0) {
+          applyColor();
+        } else {
+          avatarImg.addEventListener('load', applyColor, { once: true });
+        }
+      }
+    } else {
+      card.style.setProperty('--card-accent-rgb', '148, 163, 184');
+      card.style.setProperty('--card-accent', '#94a3b8');
+    }
 
     attachSpotlightEffect(card);
 
@@ -1033,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === rouletteBackdrop) closeRouletteModal();
   });
 
-  // ==================== 10. Inspector Detail Drawer (Manual card inspector) ====================
+  // ==================== 10. Inspector Detail Drawer (Polaroid Time Capsule & Mutation Timeline) ====================
   function openInspectorDrawer(user) {
     const rawAvatar = user.avatar_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
     const avatar = resolveMediaUrl(rawAvatar);
@@ -1042,85 +1114,248 @@ document.addEventListener('DOMContentLoaded', () => {
     const isTop = (user.followers_count >= 500000);
     const isSuspended = user.is_suspended === 1;
     const isDeleted = user.is_suspended === 2;
+    const isTombstone = isSuspended || isDeleted;
+
+    const archivedTime = user.backed_up_at ? new Date(user.backed_up_at) : new Date();
+    const archiveDateStr = !isNaN(archivedTime.getTime()) ? archivedTime.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '已收录';
+    const daysSinceArchive = !isNaN(archivedTime.getTime()) ? Math.max(1, Math.floor((Date.now() - archivedTime.getTime()) / (1000 * 60 * 60 * 24))) : 1;
+    const vaultNo = 'VAULT-' + String(user.id || user.screen_name).slice(-5).toUpperCase().padStart(5, '0');
+
     let memorialNotice = '';
     if (isSuspended) {
       memorialNotice = `
         <div class="memorial-banner">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-          <div><strong>历史封存档案：</strong>该博主 X 官方账号已被封禁/冻结，此处的历史头像、简介与数据已永久冷备份留存。</div>
+          <div class="memorial-banner-header">
+            ${ICONS.ghost}
+            <span><strong>赛博遗迹 · 信号沉寂</strong></span>
+          </div>
+          <p>该博主 X 官方账号已被封禁/冻结。本档案馆已永久冷固化其最后的历史头像、背景及简介资产。</p>
+          <div class="memorial-actions">
+            <button class="btn-send-candle" id="btn-send-candle" type="button">
+              ${ICONS.candle}
+              <span>为 TA 点亮一盏微光</span>
+            </button>
+          </div>
         </div>
       `;
     } else if (isDeleted) {
       memorialNotice = `
         <div class="memorial-banner deleted">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <div><strong>历史封存档案：</strong>该博主 X 官方账号已注销或不存在，历史数据已永久留档。</div>
+          <div class="memorial-banner-header">
+            ${ICONS.ghost}
+            <span><strong>赛博遗迹 · 账号注销</strong></span>
+          </div>
+          <p>该博主 X 官方账号已注销或不存在。历史数据已在此永久留档存续。</p>
+          <div class="memorial-actions">
+            <button class="btn-send-candle" id="btn-send-candle" type="button">
+              ${ICONS.candle}
+              <span>为 TA 点亮一盏微光</span>
+            </button>
+          </div>
         </div>
       `;
     }
 
     drawerBody.innerHTML = `
-      <div style="height: 140px; border-radius: var(--radius-md); background: url('${cover}') center/cover no-repeat; border: 1px solid var(--border-subtle); position: relative;">
-        <div style="position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.5) 100%); border-radius: var(--radius-md);"></div>
-      </div>
-
-      <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-top: -40px; position: relative; padding: 0 8px;">
-        <div style="position: relative; overflow: visible;">
-          <img src="${avatar}" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--bg-elevated); box-shadow: var(--shadow-md); background: var(--bg-surface); object-fit: cover;">
-          ${user.verified ? `<div class="badge-verified-native" style="bottom: 2px; right: 2px; width: 22px; height: 22px;" title="Twitter 官方认证">${ICONS.verifiedNative}</div>` : ''}
+      <div class="polaroid-capsule-card ${isTombstone ? 'is-tombstone' : ''}">
+        <!-- Top Full-Bleed Polaroid Header Banner -->
+        <div class="polaroid-header-wrap">
+          <div class="polaroid-banner-img" style="background-image: url('${cover}');">
+            <div class="polaroid-banner-scrim"></div>
+          </div>
+          <div class="polaroid-stamp">
+            <div class="stamp-border">
+              <span class="stamp-title">ARCHIVE CERTIFIED</span>
+              <span class="stamp-id">${vaultNo}</span>
+              <span class="stamp-date">${archiveDateStr}</span>
+            </div>
+          </div>
         </div>
-        <div style="display: flex; gap: 6px; align-items: center;">
-          ${isSuspended ? `<span class="badge-status-pill suspended">已封号</span>` : ''}
-          ${isDeleted ? `<span class="badge-status-pill deleted">已注销</span>` : ''}
-          <span class="card-influence-pill ${isTop ? 'top-tier' : ''}" style="font-size: 12px;">${isTop ? 'Top 头部创作者' : '精选创作者'}</span>
-        </div>
-      </div>
 
-      <div>
-        <h2 id="drawer-user-name" style="font-size: 20px; font-weight: 800; color: var(--text-main); line-height: 1.2;">${escapeHtml(user.name)}</h2>
-        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-          <span style="font-family: var(--font-mono); color: var(--accent-primary); font-size: 14px;">@${escapeHtml(user.screen_name)}</span>
-          <button id="btn-copy-handle" style="padding: 2px 8px; font-size: 11px; background: var(--bg-chip); border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-muted); cursor: pointer;" title="复制 @ID">
-            复制 ID
+        <!-- Floating Avatar & Tags Row -->
+        <div class="polaroid-profile-row">
+          <div class="polaroid-avatar-wrap">
+            <img class="polaroid-avatar-img" src="${avatar}" alt="${escapeHtml(user.name)}" crossorigin="anonymous" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';">
+            ${user.verified ? `<div class="badge-verified-native" title="Twitter 官方认证">${ICONS.verifiedNative}</div>` : ''}
+          </div>
+          <div class="polaroid-tags-group">
+            ${isSuspended ? `<span class="badge-status-pill suspended">${ICONS.ghost} 已封号</span>` : ''}
+            ${isDeleted ? `<span class="badge-status-pill deleted">${ICONS.ghost} 已注销</span>` : ''}
+            <span class="card-influence-pill ${isTop ? 'top-tier' : ''}">${isTop ? 'Top 头部创作者' : '精选创作者'}</span>
+          </div>
+        </div>
+
+        <!-- Identity & Handle -->
+        <div class="polaroid-name-block">
+          <h2 id="drawer-user-name" class="polaroid-user-name">${escapeHtml(user.name)}</h2>
+          <div class="polaroid-handle-row">
+            <span class="polaroid-handle-text">@${escapeHtml(user.screen_name)}</span>
+            <button id="btn-copy-handle" class="btn-chip-copy" title="复制 @ID">
+              ${ICONS.copy}
+              <span>复制 ID</span>
+            </button>
+          </div>
+        </div>
+
+        ${memorialNotice}
+
+        <!-- 4-Cell Time Capsule Metric Grid -->
+        <div class="polaroid-metric-grid">
+          <div class="metric-cell">
+            <div class="metric-val">${formatFollowers(user.followers_count)}</div>
+            <div class="metric-lbl">关注者 (粉丝)</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-val ${user.verified ? 'is-verified' : ''}">${user.verified ? '官方认证' : '普通用户'}</div>
+            <div class="metric-lbl">蓝标状态</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-val">${archiveDateStr}</div>
+            <div class="metric-lbl">首次归档日</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-val highlight">${daysSinceArchive} 天</div>
+            <div class="metric-lbl">已留存时光</div>
+          </div>
+        </div>
+
+        <!-- Full Bio Section -->
+        <div class="polaroid-bio-section">
+          <div class="section-title-tag">博主简介 (Bio)</div>
+          <div class="polaroid-bio-card">
+            ${formatBioWithLinks(user.description)}
+          </div>
+        </div>
+
+        <!-- Mutation Timeline Collapsible Section -->
+        <details class="polaroid-history-accordion" id="drawer-history-details">
+          <summary class="polaroid-history-summary">
+            <div class="summary-left">
+              ${ICONS.history}
+              <span>变迁履历档案 (Profile Timeline)</span>
+            </div>
+            <div class="summary-arrow">${ICONS.chevronDown}</div>
+          </summary>
+          <div class="polaroid-history-content" id="drawer-history-list">
+            <div class="timeline-loading-spinner">
+              <div class="skeleton-spinner"></div>
+              <span>正在调取时光变迁档案...</span>
+            </div>
+          </div>
+        </details>
+
+        <!-- Action Footer -->
+        <div class="polaroid-actions-row">
+          <a class="btn-drawer-primary" href="https://x.com/${user.screen_name}" target="_blank">
+            <span>${isTombstone ? '前往 X 查看原账号' : '前往 X 个人主页'}</span>
+            ${ICONS.external}
+          </a>
+          <button class="btn-drawer-secondary" id="btn-copy-markdown" type="button" title="一键复制 Markdown 档案卡">
+            ${ICONS.markdown}
+            <span>复制 Markdown</span>
           </button>
         </div>
       </div>
-
-      ${memorialNotice}
-
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); text-align: center;">
-        <div>
-          <div style="font-size: 15px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">${formatFollowers(user.followers_count)}</div>
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">粉丝数</div>
-        </div>
-        <div>
-          <div style="font-size: 15px; font-weight: 700; font-family: var(--font-mono); color: ${user.verified ? '#1d9bf0' : 'var(--text-muted)'};">${user.verified ? '已认证' : '未认证'}</div>
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">蓝标状态</div>
-        </div>
-        <div>
-          <div style="font-size: 15px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">${user.backed_up_at ? new Date(user.backed_up_at).toLocaleDateString() : '已收录'}</div>
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">收录时间</div>
-        </div>
-      </div>
-
-      <div>
-        <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">博主简介 (Bio)</div>
-        <div style="padding: 14px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); font-size: 14px; line-height: 1.6; color: var(--text-secondary);">
-          ${formatBioWithLinks(user.description)}
-        </div>
-      </div>
-
-      <div style="display: flex; gap: 10px; margin-top: 10px;">
-        <a href="https://x.com/${user.screen_name}" target="_blank" style="flex: 1; padding: 12px; background: var(--accent-primary); color: #000000; font-weight: 700; font-size: 14px; border-radius: var(--radius-full); text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: var(--shadow-glow);">
-          <span>前往 X 个人主页</span>
-          ${ICONS.external}
-        </a>
-      </div>
     `;
 
-    document.getElementById('btn-copy-handle')?.addEventListener('click', () => {
+    // Dynamic color extraction on drawer avatar
+    const drawerAvatarImg = drawerBody.querySelector('.polaroid-avatar-img');
+    if (drawerAvatarImg && !isTombstone) {
+      const applyDrawerColor = () => {
+        const rgb = extractDominantColor(drawerAvatarImg);
+        drawerBody.style.setProperty('--card-accent-rgb', rgb);
+        drawerBody.style.setProperty('--card-accent', `rgb(${rgb})`);
+      };
+      if (drawerAvatarImg.complete && drawerAvatarImg.naturalWidth !== 0) {
+        applyDrawerColor();
+      } else {
+        drawerAvatarImg.addEventListener('load', applyDrawerColor, { once: true });
+      }
+    } else {
+      drawerBody.style.setProperty('--card-accent-rgb', '148, 163, 184');
+      drawerBody.style.setProperty('--card-accent', '#94a3b8');
+    }
+
+    // Copy Handle Handler
+    document.getElementById('btn-copy-handle')?.addEventListener('click', (e) => {
+      triggerClickSpark(e, 8, 'var(--card-accent)');
       navigator.clipboard.writeText(`@${user.screen_name}`);
       showToast(`已复制 @${user.screen_name} 到剪贴板`);
+    });
+
+    // Copy Markdown Card Handler
+    document.getElementById('btn-copy-markdown')?.addEventListener('click', (e) => {
+      triggerClickSpark(e, 10, 'var(--card-accent)');
+      const mdContent = `### ${user.name} (@${user.screen_name})\n\n- **粉丝数**：${formatFollowers(user.followers_count)}\n- **认证状态**：${user.verified ? '已蓝标认证' : '未认证'}\n- **归档编号**：${vaultNo}\n- **首次收录**：${archiveDateStr}\n- **已留存**：${daysSinceArchive} 天\n- **个人简介**：${user.description || '暂无简介'}\n- **主页链接**：https://x.com/${user.screen_name}`;
+      navigator.clipboard.writeText(mdContent);
+      showToast('已复制博主 Markdown 档案卡到剪贴板');
+    });
+
+    // Send Candle / Memorial Spark Handler
+    document.getElementById('btn-send-candle')?.addEventListener('click', (e) => {
+      triggerLuxuryCelebrationFireworks(e.currentTarget);
+      showToast(`🕯️ 已为 @${user.screen_name} 点亮一盏赛博微光`);
+    });
+
+    // Mutation Timeline Lazy Loader
+    const historyDetails = document.getElementById('drawer-history-details');
+    const historyList = document.getElementById('drawer-history-list');
+    let historyLoaded = false;
+
+    historyDetails?.addEventListener('toggle', async () => {
+      if (!historyDetails.open || historyLoaded) return;
+      historyLoaded = true;
+
+      try {
+        const res = await fetch(`/api/history?id=${encodeURIComponent(user.id || '')}&screen_name=${encodeURIComponent(user.screen_name || '')}`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          historyList.innerHTML = json.data.map(item => {
+            const dateStr = item.changed_at ? new Date(item.changed_at).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '记录时间';
+            let fieldLabel = '字段更新';
+            if (item.field === 'name') fieldLabel = '博主昵称变迁';
+            else if (item.field === 'avatar_url') fieldLabel = '头像变迁更新';
+            else if (item.field === 'cover_url') fieldLabel = 'Banner 背景图更换';
+            else if (item.field === 'description') fieldLabel = '个人简介 (Bio) 修改';
+            else if (item.field === 'screen_name') fieldLabel = 'Handle @ID 更名';
+            else if (item.field === 'is_suspended') fieldLabel = '账号状态异动 (封禁/注销)';
+
+            return `
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <div class="timeline-header">
+                    <span class="timeline-type">${escapeHtml(fieldLabel)}</span>
+                    <span class="timeline-date">${escapeHtml(dateStr)}</span>
+                  </div>
+                  <div class="timeline-diff">
+                    ${item.old_value ? `<div class="diff-line diff-del"><span class="diff-tag">- 旧</span> ${escapeHtml(item.old_value)}</div>` : ''}
+                    ${item.new_value ? `<div class="diff-line diff-add"><span class="diff-tag">+ 新</span> ${escapeHtml(item.new_value)}</div>` : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          // If no history in D1 yet, show initial archive creation event
+          const initialDate = user.backed_up_at ? new Date(user.backed_up_at).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '首次归档';
+          historyList.innerHTML = `
+            <div class="timeline-item">
+              <div class="timeline-dot active"></div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="timeline-type">创世归档入库</span>
+                  <span class="timeline-date">${escapeHtml(initialDate)}</span>
+                </div>
+                <div class="timeline-desc">博主档案首次被收录至女菩萨精选画廊，媒体资产与档案快照已永久冷固化。</div>
+              </div>
+            </div>
+            <div class="timeline-empty-hint">暂无后续改名或头像更迭记录（同步引擎将在博主资料变更时自动捕获快照）</div>
+          `;
+        }
+      } catch (e) {
+        historyList.innerHTML = `<div class="timeline-empty-hint">变迁档案拉取失败，请检查网络后重试</div>`;
+      }
     });
 
     inspectorBackdrop.classList.remove('hidden');
