@@ -953,12 +953,16 @@ code, kbd {
 
 .custom-select-box {
   position: relative;
+  width: 172px;
 }
 
 .select-trigger-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
   padding: 6px 14px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -967,6 +971,21 @@ code, kbd {
   font-weight: 600;
   color: var(--text-secondary);
   transition: all 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.select-trigger-btn span {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.select-trigger-btn .arrow-icon {
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .select-trigger-btn:hover {
@@ -974,11 +993,22 @@ code, kbd {
   border-color: var(--border-medium);
 }
 
+.select-trigger-btn[aria-expanded="true"] {
+  border-color: var(--accent-primary);
+  color: var(--text-main);
+}
+
+.select-trigger-btn[aria-expanded="true"] .arrow-icon {
+  transform: rotate(180deg);
+}
+
 .select-dropdown-menu {
   position: absolute;
   top: calc(100% + 6px);
+  left: 0;
   right: 0;
-  width: 190px;
+  width: 100%;
+  box-sizing: border-box;
   background: var(--bg-elevated);
   backdrop-filter: blur(20px);
   border: 1px solid var(--border-medium);
@@ -1001,12 +1031,14 @@ code, kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: 8px 10px;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
   cursor: pointer;
+  box-sizing: border-box;
+  white-space: nowrap;
   transition: all 0.12s;
 }
 
@@ -3132,11 +3164,14 @@ code, kbd {
 
 .blogger-sort-select-box {
   position: relative;
+  width: 168px;
 }
 
 .blogger-sort-trigger-btn {
   height: 40px;
-  padding: 0 14px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 12px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -3146,10 +3181,17 @@ code, kbd {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 6px;
   outline: none;
   transition: all 0.2s ease;
   user-select: none;
+}
+
+.blogger-sort-trigger-btn span {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
 }
 
 .blogger-sort-trigger-btn:hover {
@@ -3171,7 +3213,7 @@ code, kbd {
 .blogger-sort-trigger-btn .arrow-icon {
   color: var(--text-muted);
   transition: transform 0.2s ease;
-  margin-left: 2px;
+  margin-left: auto;
   flex-shrink: 0;
 }
 
@@ -3180,9 +3222,11 @@ code, kbd {
 }
 
 .blogger-sort-select-box .select-dropdown-menu {
-  width: 175px;
-  top: calc(100% + 6px);
+  width: 100%;
+  left: 0;
   right: 0;
+  box-sizing: border-box;
+  top: calc(100% + 6px);
   z-index: 120;
 }
 

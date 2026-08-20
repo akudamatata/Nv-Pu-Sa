@@ -720,6 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterTabBtns = document.querySelectorAll('.filter-tab-btn');
   const tabCountAll = document.getElementById('tab-count-all');
   const tabCountActive = document.getElementById('tab-count-active');
+  const tabCountBlocked = document.getElementById('tab-count-blocked');
   const bloggerSortTriggerBtn = document.getElementById('blogger-sort-trigger-btn');
   const bloggerSortMenu = document.getElementById('blogger-sort-menu');
   const bloggerSortCurrentText = document.getElementById('blogger-sort-current-text');
@@ -869,6 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
       }
     } catch (e) {
+      console.error('loadBloggerVault error:', e);
       bloggerListContainer.innerHTML = `
         <div class="blogger-list-empty">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>

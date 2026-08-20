@@ -457,6 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (e) => {
     if (!sortMenu?.contains(e.target) && !sortTriggerBtn?.contains(e.target)) {
       sortMenu?.classList.add('hidden');
+      sortTriggerBtn?.setAttribute('aria-expanded', 'false');
     }
   });
 
@@ -711,16 +712,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   sortTriggerBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
-    sortMenu.classList.toggle('hidden');
+    const isClosed = sortMenu.classList.toggle('hidden');
+    sortTriggerBtn.setAttribute('aria-expanded', String(!isClosed));
   });
 
   sortMenuItems.forEach(item => {
     item.addEventListener('click', () => {
       const val = item.getAttribute('data-val');
-      const txt = item.querySelector('span').textContent;
+      const txt = item.querySelector('span')?.textContent || '';
 
       setSortMenuSelection(val, txt);
       sortMenu.classList.add('hidden');
+      sortTriggerBtn?.setAttribute('aria-expanded', 'false');
       applyFilterAndSort();
     });
   });
