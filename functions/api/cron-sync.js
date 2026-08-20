@@ -6,6 +6,10 @@ function getD1(env) {
   return env.DB || env.nv_pu_sa_db || env.DB_BINDING || env.D1 || env.DATABASE || null;
 }
 
+function getR2Bucket(env) {
+  return env.BUCKET || env.R2 || env.MEDIA_BUCKET || env.x_archive_media || env['x-archive-media'] || null;
+}
+
 export async function onRequestGet({ request, env }) {
   try {
     const db = getD1(env);
@@ -240,6 +244,49 @@ export async function onRequestGet({ request, env }) {
     }
 
     const newUsers = fetchedUsers.filter(u => !existingMap.has(u.screen_name.toLowerCase()));
+
+    // 4. 同步全量下载头像与封面 Banner 并写入 Cloudflare R2 对象存储桶
+    const bucket = getR2Bucket(env);
+    let r2UploadedCount = 0;
+    if (bucket && fetchedUsers.length > 0) {
+      const uploadTasks = fetchedUsers.map(async (u) => {
+        if (u.avatar_url && u.avatar_url.startsWith('http') && !u.avatar_url.startsWith('/api/media')) {
+          const aKey = `avatars/${u.screen_name}_400x400.jpg`;
+          try {
+            const aRes = await fetch(u.avatar_url, { signal: AbortSignal.timeout(6000) });
+            if (aRes.ok) {
+              const aBuf = await aRes.arrayBuffer();
+              await bucket.put(aKey, aBuf, {
+                httpMetadata: {
+                  contentType: 'image/jpeg',
+                  cacheControl: 'public, max-age=31536000, immutable'
+                }
+              });
+              u.avatar_url = `/api/media?key=${encodeURIComponent(aKey)}`;
+              r2UploadedCount++;
+            }
+          } catch (err) {}
+        }
+        if (u.cover_url && u.cover_url.startsWith('http') && !u.cover_url.startsWith('/api/media')) {
+          const cKey = `covers/${u.screen_name}_banner.jpg`;
+          try {
+            const cRes = await fetch(u.cover_url, { signal: AbortSignal.timeout(6000) });
+            if (cRes.ok) {
+              const cBuf = await cRes.arrayBuffer();
+              await bucket.put(cKey, cBuf, {
+                httpMetadata: {
+                  contentType: 'image/jpeg',
+                  cacheControl: 'public, max-age=31536000, immutable'
+                }
+              });
+              u.cover_url = `/api/media?key=${encodeURIComponent(cKey)}`;
+              r2UploadedCount++;
+            }
+          } catch (err) {}
+        }
+      });
+      await Promise.allSettled(uploadTasks);
+    }
 
     if (fetchedUsers.length > 0) {
       await db.prepare(`
