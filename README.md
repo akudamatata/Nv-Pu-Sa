@@ -1,20 +1,26 @@
 # Nv-Pu-Sa (女菩萨) 🌸
 
 > **Nv-Pu-Sa (女菩萨)** 是一款专为个人打造的 X (Twitter) 关注列表自动备份、全量博主墙归档与高颜值精选画廊系统。
-> 支持本地 Node.js 快速运行，亦支持 100% 部署在 Cloudflare Pages & D1 数据库，实现全网免费、无限扩容的分布式云端部署。
+> 支持本地 Node.js 快速运行，亦支持 100% 部署在 Cloudflare Pages、D1 数据库与 R2 对象存储，实现全网免费、无限扩容的分布式云端部署。
 
-![Nv-Pu-Sa Banner](https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80)
+<p align="center">
+  <img src="./public/logo-large.png" alt="Nv-Pu-Sa Logo Large" width="100%">
+</p>
 
 ---
 
 ## ✨ 核心特性
 
 - 🌸 **高颜值暗黑精选画廊**：极简高颜值 UI，支持卡片与列表切换、多维排序与精准关键词模糊搜索。
-- 🔑 **全新 GraphQL 2026 爬虫引擎**：自动锁在线最新 GraphQL QueryID，彻底告别旧版 REST API 404 限制。
+- 🌈 **头像主色光晕 (Dynamic Ambient Tint)**：HSL 色相峰值高饱和提取引擎，自动为每位博主生成专属流光色彩。
+- 📸 **拍立得时光详情卡 (Polaroid Time Capsule)**：全宽 Banner 视差、复古归档钢印、四格时光留存指标与 Markdown 档案一键导出。
+- ⏳ **变迁履历时间轴 (Profile Timeline)**：D1 数据库自动记录博主历次更名、换头像、换 Banner、改 Bio 的 Git-Diff 历史快照。
+- ⚰️ **赛博坟场 / 失联遗迹馆 (Cyber Tombstone)**：封号与注销博主灰阶永久冷备份留档，支持幽灵苏醒与微光悼念粒子互动。
+- 🔑 **全新 GraphQL 2026 爬虫引擎**：自动锁定最新 GraphQL QueryID，支持智能增量同步与全量深度巡检。
 - 🎯 **目标关注数精准即停**：在线识别账号关注总数（`following_count`），抓满即秒级自动安全打断，防止无用下翻页。
 - 🔗 **100% 完整 Bio 还原**：自动展开 `t.co` 链接，完整保留原生段落换行、主页外部网址 (Website)、位置 (Location) 与注册时间。
 - 🔒 **私密 Passcode Vault**：双层独立隔离——管理员通过 Passcode 锁屏防护，后台卡片安全掌控 X Cookie 凭据。
-- ☁️ **Cloudflare 边缘全免费架构**：完美适配 Cloudflare Pages Functions 与 D1 边缘 Serverless 数据库。
+- ☁️ **Cloudflare 边缘全免费架构 (D1 + R2)**：完美适配 Cloudflare Pages Functions、D1 Serverless 数据库与 R2 媒体对象存储。
 - 📦 **开箱即用 / 一键导出**：支持标准 JSON 全量数据导入、导出与一键归档恢复。
 
 ---
