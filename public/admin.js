@@ -720,8 +720,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterTabBtns = document.querySelectorAll('.filter-tab-btn');
   const tabCountAll = document.getElementById('tab-count-all');
   const tabCountActive = document.getElementById('tab-count-active');
-  const tabCountBlocked = document.getElementById('tab-count-blocked');
-  const bloggerSortSelect = document.getElementById('blogger-sort-select');
+  const bloggerSortTriggerBtn = document.getElementById('blogger-sort-trigger-btn');
+  const bloggerSortMenu = document.getElementById('blogger-sort-menu');
+  const bloggerSortCurrentText = document.getElementById('blogger-sort-current-text');
+  const bloggerSortMenuItems = document.querySelectorAll('#blogger-sort-menu .menu-item');
   const bloggerListContainer = document.getElementById('blogger-list-container');
   const bloggerPaginationInfo = document.getElementById('blogger-pagination-info');
   const bloggerPageIndicator = document.getElementById('blogger-page-indicator');
@@ -1079,11 +1081,43 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 排序下拉切换
-  bloggerSortSelect?.addEventListener('change', (e) => {
-    bvCurrentSort = e.target.value;
-    bvCurrentPage = 1;
-    loadBloggerVault();
+  function setBloggerSortSelection(sortVal, sortText) {
+    bvCurrentSort = sortVal;
+    if (bloggerSortCurrentText) bloggerSortCurrentText.textContent = sortText;
+    bloggerSortMenuItems.forEach(item => {
+      const match = item.getAttribute('data-val') === sortVal;
+      item.classList.toggle('active', match);
+      const check = item.querySelector('.check-icon');
+      if (check) check.classList.toggle('hidden', !match);
+    });
+  }
+
+  // 排序下拉切换展开/收起
+  bloggerSortTriggerBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isClosed = bloggerSortMenu?.classList.toggle('hidden');
+    bloggerSortTriggerBtn.setAttribute('aria-expanded', String(!isClosed));
+  });
+
+  // 排序项选中
+  bloggerSortMenuItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const val = item.getAttribute('data-val');
+      const txt = item.querySelector('span')?.textContent || '';
+      setBloggerSortSelection(val, txt);
+      bloggerSortMenu?.classList.add('hidden');
+      bloggerSortTriggerBtn?.setAttribute('aria-expanded', 'false');
+      bvCurrentPage = 1;
+      loadBloggerVault();
+    });
+  });
+
+  // 点击外部收起排序下拉菜单
+  document.addEventListener('click', (e) => {
+    if (!bloggerSortMenu?.contains(e.target) && !bloggerSortTriggerBtn?.contains(e.target)) {
+      bloggerSortMenu?.classList.add('hidden');
+      bloggerSortTriggerBtn?.setAttribute('aria-expanded', 'false');
+    }
   });
 
   // 分页按钮

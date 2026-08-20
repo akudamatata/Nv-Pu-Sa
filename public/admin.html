@@ -432,16 +432,35 @@
             </button>
           </div>
 
-          <!-- Sort Dropdown -->
-          <div class="blogger-sort-wrapper">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
-            <select id="blogger-sort-select">
-              <option value="backed_up_at_desc">最新归档优先</option>
-              <option value="backed_up_at_asc">最早归档优先</option>
-              <option value="followers_desc">粉丝量由高到低</option>
-              <option value="followers_asc">粉丝量由低到高</option>
-              <option value="name_asc">博主昵称 A-Z</option>
-            </select>
+          <!-- Sort Dropdown (Custom UI Dropdown) -->
+          <div class="custom-select-box blogger-sort-select-box" id="blogger-sort-select-box">
+            <button class="select-trigger-btn blogger-sort-trigger-btn" id="blogger-sort-trigger-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+              <svg class="sort-prefix-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
+              <span id="blogger-sort-current-text">最新归档优先</span>
+              <svg class="arrow-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="select-dropdown-menu hidden" id="blogger-sort-menu" role="listbox">
+              <div class="menu-item active" data-val="backed_up_at_desc" role="option">
+                <span>最新归档优先</span>
+                <svg class="check-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <div class="menu-item" data-val="backed_up_at_asc" role="option">
+                <span>最早归档优先</span>
+                <svg class="check-icon hidden" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <div class="menu-item" data-val="followers_desc" role="option">
+                <span>粉丝量由高到低</span>
+                <svg class="check-icon hidden" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <div class="menu-item" data-val="followers_asc" role="option">
+                <span>粉丝量由低到高</span>
+                <svg class="check-icon hidden" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <div class="menu-item" data-val="name_asc" role="option">
+                <span>博主昵称 A-Z</span>
+                <svg class="check-icon hidden" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+            </div>
           </div>
         </div>
 
