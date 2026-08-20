@@ -95,7 +95,16 @@ jobs:
               if (deleted > 0) console.log(\`   ⚠️ 本页新标记 \${deleted} 位注销博主 (历史数据已安全封存留档)\`);
               console.log(\`📊 [PROGRESS] 当前已累计深度巡检: \${totalScanned} 人 | 库中总博主数: \${totalDbCount} 人\`);
 
-              if (!res.has_more || !res.next_cursor || res.next_cursor === cursor) {
+              const isTailPage = scanned < 40;
+              const isDone = !res.has_more || 
+                             !res.next_cursor || 
+                             res.next_cursor === cursor || 
+                             res.next_cursor === '0' || 
+                             String(res.next_cursor).startsWith('0|') ||
+                             isTailPage ||
+                             (totalDbCount > 0 && totalScanned >= totalDbCount);
+
+              if (isDone) {
                 console.log('\n🏁 [COMPLETE] 全部关注博主已全量逐页遍历核验完成！已到达关注列表底部。');
                 break;
               }

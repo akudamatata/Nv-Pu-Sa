@@ -380,6 +380,14 @@ export async function onRequestGet({ request, env }) {
     const suspendedCount = suspendedUsers.filter(s => s.is_suspended === 1).length;
     const deletedCount = suspendedUsers.filter(s => s.is_suspended === 2).length;
 
+    const isTailPage = isFullMode ? (fetchedUsers.length < 40) : false;
+    const hasMore = !!nextCursorVal && 
+                    nextCursorVal !== queryCursor && 
+                    nextCursorVal !== '0' && 
+                    !nextCursorVal.startsWith('0|') && 
+                    !isIncrementalStop && 
+                    !isTailPage;
+
     return Response.json({
       cron_status: 'success',
       mode: isFullMode ? 'full' : 'incremental',
@@ -389,8 +397,8 @@ export async function onRequestGet({ request, env }) {
       new_count: newUsers.length,
       suspended_count: suspendedCount,
       not_found_count: deletedCount,
-      next_cursor: nextCursorVal,
-      has_more: !!nextCursorVal && !isIncrementalStop,
+      next_cursor: hasMore ? nextCursorVal : null,
+      has_more: hasMore,
       total_db_count: totalDbCount,
       message: isFullMode
         ? `全量单页刷新完成：深度更新 ${fetchedUsers.length} 位博主全套资料，封号 ${suspendedCount} 人，注销 ${deletedCount} 人`
