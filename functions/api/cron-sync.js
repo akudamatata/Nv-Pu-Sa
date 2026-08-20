@@ -381,12 +381,12 @@ export async function onRequestGet({ request, env }) {
     const deletedCount = suspendedUsers.filter(s => s.is_suspended === 2).length;
 
     const isTailPage = isFullMode ? (fetchedUsers.length < 40) : false;
-    const hasMore = !!nextCursorVal && 
-                    nextCursorVal !== queryCursor && 
-                    nextCursorVal !== '0' && 
-                    !nextCursorVal.startsWith('0|') && 
-                    !isIncrementalStop && 
-                    !isTailPage;
+    hasMore = !!nextCursorVal && 
+              nextCursorVal !== queryCursor && 
+              nextCursorVal !== '0' && 
+              !nextCursorVal.startsWith('0|') && 
+              !isIncrementalStop && 
+              !isTailPage;
 
     return Response.json({
       cron_status: 'success',
